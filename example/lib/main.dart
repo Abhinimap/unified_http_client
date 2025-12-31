@@ -18,7 +18,6 @@ void main() async {
   PackageDio.setBaseOptions(
       baseUrl: 'https://66c45adfb026f3cc6ceefd10.mockapi.io');
   PackageDio.setUpDio();
-
   // setup HTTP
   PackageHttp.setupClient(client: http.Client());
   PackageHttp.setup(host: '66c45adfb026f3cc6ceefd10.mockapi.io', prefix: '');
