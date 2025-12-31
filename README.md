@@ -75,7 +75,7 @@ Initialize Snackbar after MaterialApp is configured.
   @override
   Widget build(BuildContext context) {
     
-    // Make sure to call init function before using api call from ErrorHandelerFlutter class
+    // Make sure to call init function before using api call from UnifiedHttpClient class
     // context is needed to show No internet Snackbar,
     // Otherwise Snackbar will not appear when device is not connected to internet and api request is made
     CustomSnackbar().init(context);
@@ -84,8 +84,8 @@ Initialize Snackbar after MaterialApp is configured.
       appBar: AppBar(
 ```
 
-Calling APi using ErrorHandelerFlutter class
-use `ErrorHandelerFlutter().get(url)` to make GET request call
+Calling APi using UnifiedHttpClient class
+use `UnifiedHttpClient().get(url)` to make GET request call
 and get response as Result class, use Switch statement to iterate through Success or Failure
 
 Below is sample code for how the request are made and how response are manipulated
