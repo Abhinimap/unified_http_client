@@ -165,4 +165,117 @@ class PackageDio {
               defaultMessage: 'something went Wrong : $e')));
     }
   }
+
+  /// Multipart request of DIO for file uploads
+  /// Example:
+  /// ```dart
+  /// final result = await PackageDio.dioMultipart(
+  ///   urlPath: '/upload',
+  ///   files: {
+  ///     'image': {
+  ///       'path': '/path/to/image.jpg',
+  ///       'filename': 'image.jpg',
+  ///     },
+  ///   },
+  ///   fields: {
+  ///     'title': 'My Image',
+  ///     'description': 'Image description',
+  ///   },
+  /// );
+  /// ```
+  static dioMultipart({
+    required String urlPath,
+    Map<String, dynamic>? queryPara,
+    Map<String, dynamic>? headers,
+    Map<String, Map<String, dynamic>>? files,
+    Map<String, String>? fields,
+  }) async {
+    try {
+      final formData = FormData();
+
+      // Add form fields
+      if (fields != null) {
+        for (final entry in fields.entries) {
+          formData.fields.add(MapEntry(entry.key, entry.value));
+        }
+      }
+
+      // Add files
+      if (files != null) {
+        for (final entry in files.entries) {
+          final fieldName = entry.key;
+          final fileData = entry.value;
+
+          MultipartFile multipartFile;
+
+          if (fileData.containsKey('path')) {
+            // File from path
+            final filePath = fileData['path'] as String;
+            final filename = fileData['filename'] as String? ??
+                filePath.split('/').last;
+
+            multipartFile = await MultipartFile.fromFile(
+              filePath,
+              filename: filename,
+            );
+          } else if (fileData.containsKey('bytes')) {
+            // File from bytes
+            final bytesList = fileData['bytes'];
+            final bytes = bytesList is List<int>
+                ? bytesList
+                : (bytesList as Uint8List).toList();
+            final filename = fileData['filename'] as String? ??
+                'file_${DateTime.now().millisecondsSinceEpoch}';
+
+            multipartFile = MultipartFile.fromBytes(
+              bytes,
+              filename: filename,
+            );
+          } else {
+            return Failure(ErrorResponse(
+                unifiedHttpClientEnum: UnifiedHttpClientEnum.badRequestError,
+                errorResponseHolder: ErrorResponseHolder(
+                    defaultMessage:
+                        'Invalid file data for field "$fieldName". Must provide either "path" or "bytes".')));
+          }
+
+          formData.files.add(MapEntry(fieldName, multipartFile));
+        }
+      }
+
+      final res = await _dio.post(
+        urlPath,
+        data: formData,
+        queryParameters: queryPara,
+        options: Options(headers: headers),
+      );
+      return res;
+    } on PlatformException {
+      return Failure(ErrorResponse(
+          unifiedHttpClientEnum: UnifiedHttpClientEnum.platformExceptionError,
+          errorResponseHolder: ErrorResponseHolder(
+              defaultMessage: 'Platform Exception Caught')));
+    } on SocketException catch (e) {
+      return Failure(ErrorResponse(
+          unifiedHttpClientEnum: UnifiedHttpClientEnum.socketExceptionError,
+          errorResponseHolder:
+              ErrorResponseHolder(defaultMessage: 'Socket Exception:$e')));
+    } on FormatException {
+      return Failure(ErrorResponse(
+          unifiedHttpClientEnum: UnifiedHttpClientEnum.formatExceptionError,
+          errorResponseHolder:
+              ErrorResponseHolder(defaultMessage: 'format exception Error')));
+    } on DioException catch (e) {
+      debugPrint('error of dioexp in multipart : ${e.type}');
+      return Failure(ErrorResponse(
+          unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
+          errorResponseHolder: ErrorResponseHolder(
+              defaultMessage: 'Dio Exception in multipart: ${e.message}')));
+    } catch (e) {
+      return Failure(ErrorResponse(
+          unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
+          errorResponseHolder: ErrorResponseHolder(
+              defaultMessage: 'something went Wrong : $e')));
+    }
+  }
 }

@@ -287,6 +287,63 @@ class UnifiedHttpClient {
     }
   }
 
+  /// Multipart request for file uploads
+  /// Example:
+  /// ```dart
+  /// final result = await UnifiedHttpClient.multipart(
+  ///   '/upload',
+  ///   files: {
+  ///     'image': {
+  ///       'path': '/path/to/image.jpg',
+  ///       'filename': 'image.jpg',
+  ///     },
+  ///   },
+  ///   fields: {
+  ///     'title': 'My Image',
+  ///     'description': 'Image description',
+  ///   },
+  /// );
+  /// ```
+  static Future<Result> multipart(
+    String endpoint, {
+    int timeout = 3,
+    Map<String, dynamic>? queryPara,
+    Map<String, String>? headers,
+    Map<String, Map<String, dynamic>>? files,
+    Map<String, String>? fields,
+  }) async {
+    if (!await InternetConnectionChecker().hasConnection) {
+      CustomSnackbar().showNoInternetSnackbar();
+    }
+    if (useHttp) {
+      final res = await PackageHttp.multipartRequest(
+        url: PackageHttp.getUriFromEndpoints(
+            endpoint: endpoint, queryParams: queryPara),
+        headers: headers,
+        files: files,
+        fields: fields,
+      );
+
+      if (res.runtimeType == Failure) {
+        return res as Failure;
+      }
+      return mapHttpResponseToResult(res);
+    } else {
+      final res = await PackageDio.dioMultipart(
+        urlPath: endpoint,
+        headers: headers,
+        queryPara: queryPara,
+        files: files,
+        fields: fields,
+      );
+
+      if (res.runtimeType == Failure) {
+        return res as Failure;
+      }
+      return mapDioResponseToResult(res);
+    }
+  }
+
   /// use ErrorHandelerFlutter().get() for API GET request.
   /// it will convert Response into Result
   /// use Success or Failure to get information about response
