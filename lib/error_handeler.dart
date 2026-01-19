@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:unified_http_client/dio_api.dart';
 import 'package:unified_http_client/http_api.dart';
 import 'package:flutter/material.dart';
@@ -18,9 +19,56 @@ class UnifiedHttpClient {
   static bool showSnackbar = true;
 
   /// by default it will use http and show snackbar
-  void init({bool? usehttp, bool? showSnackbar}) {
+  void init({
+    bool? usehttp,
+    bool? showSnackbar,
+    List<Interceptor>? dioInterceptors,
+    String? baseUrl,
+    Map<String, dynamic>? queryParameters,
+    Duration? connectTimeout,
+    Duration? receiveTimeout,
+    Duration? sendTimeout,
+    Map<String, Object?>? extra,
+    Map<String, Object?>? headers,
+    ResponseType? responseType,
+    String? contentType,
+    bool? followRedirects,
+    int? maxRedirects,
+    bool? persistentConnection,
+    RequestEncoder? requestEncoder,
+    ResponseDecoder? responseDecoder,
+  }) {
     useHttp = usehttp ?? true;
     showSnackbar = showSnackbar ?? true;
+
+    // DIO Setup
+    if (!useHttp) {
+      if (dioInterceptors != null && dioInterceptors.isNotEmpty) {
+        PackageDio.addInterceptors(dioInterceptors);
+      }
+      PackageDio.setBaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: connectTimeout,
+        receiveTimeout: receiveTimeout,
+        headers: headers,
+        responseType: responseType,
+        contentType: contentType,
+        extra: extra,
+        followRedirects: followRedirects,
+        maxRedirects: maxRedirects,
+        persistentConnection: persistentConnection,
+        queryParameters: queryParameters,
+        sendTimeout: sendTimeout,
+        requestEncoder: requestEncoder,
+        responseDecoder: responseDecoder,
+      );
+      PackageDio.setUpDio();
+    }
+
+    // HTTP Setup
+    else {
+      PackageHttp.setup(host: baseUrl ?? '');
+    }
   }
 
   /// map response into Result
@@ -40,9 +88,7 @@ class UnifiedHttpClient {
         default:
           return Failure(ErrorResponse(
               unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
-              errorResponseHolder: ErrorResponseHolder(
-                  defaultMessage: 'Something went wrong',
-                  responseBody: response.body)));
+              errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Something went wrong', responseBody: response.body)));
       }
     }
   }
@@ -64,9 +110,7 @@ class UnifiedHttpClient {
         default:
           return Failure(ErrorResponse(
               unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
-              errorResponseHolder: ErrorResponseHolder(
-                  defaultMessage: 'Something went wrong',
-                  responseBody: response.body)));
+              errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Something went wrong', responseBody: response.body)));
       }
     }
   }
@@ -80,51 +124,41 @@ class UnifiedHttpClient {
               errorResponseHolder: ErrorResponseHolder(
                   defaultMessage: 'Bad Request..',
                   responseBody: res.body,
-                  customMessage:
-                      'Bad Request.. ${res is http.Response ? res.body : res.data}')),
+                  customMessage: 'Bad Request.. ${res is http.Response ? res.body : res.data}')),
         );
       case 401:
         return Failure(
           ErrorResponse(
               unifiedHttpClientEnum: UnifiedHttpClientEnum.unAuthorizationError,
               errorResponseHolder: ErrorResponseHolder(
-                  defaultMessage:
-                      'You are not authorized to access this resources..',
+                  defaultMessage: 'You are not authorized to access this resources..',
                   responseBody: res.body,
-                  customMessage:
-                      'Unauthorized... ${res is http.Response ? res.body : res.data}')),
+                  customMessage: 'Unauthorized... ${res is http.Response ? res.body : res.data}')),
         );
       case 403:
         return Failure(
           ErrorResponse(
               unifiedHttpClientEnum: UnifiedHttpClientEnum.forbiddenError,
               errorResponseHolder: ErrorResponseHolder(
-                  defaultMessage:
-                      'You are restricted to access this resources..',
+                  defaultMessage: 'You are restricted to access this resources..',
                   responseBody: res.body,
-                  customMessage:
-                      'Forbidden... ${res is http.Response ? res.body : res.data}')),
+                  customMessage: 'Forbidden... ${res is http.Response ? res.body : res.data}')),
         );
       case 404:
         return Failure(
           ErrorResponse(
               unifiedHttpClientEnum: UnifiedHttpClientEnum.notFoundError,
               errorResponseHolder: ErrorResponseHolder(
-                  defaultMessage:
-                      'Resource want not find at ${res.request?.url}..',
+                  defaultMessage: 'Resource want not find at ${res.request?.url}..',
                   responseBody: res.body,
-                  customMessage:
-                      '404 Not Found... ${res is http.Response ? res.body : res.data}')),
+                  customMessage: '404 Not Found... ${res is http.Response ? res.body : res.data}')),
         );
       case 409:
         return Failure(
           ErrorResponse(
               unifiedHttpClientEnum: UnifiedHttpClientEnum.conflictError,
               errorResponseHolder: ErrorResponseHolder(
-                  defaultMessage: 'data Conflicted',
-                  responseBody: res.body,
-                  customMessage:
-                      '409... ${res is http.Response ? res.body : res.data}')),
+                  defaultMessage: 'data Conflicted', responseBody: res.body, customMessage: '409... ${res is http.Response ? res.body : res.data}')),
         );
       default:
         return Failure(ErrorResponse(
@@ -146,30 +180,25 @@ class UnifiedHttpClient {
               errorResponseHolder: ErrorResponseHolder(
                   defaultMessage: 'Internal Server Error..',
                   responseBody: res.body,
-                  customMessage:
-                      'Internal Server Error.. ${res is http.Response ? res.body : res.data}')),
+                  customMessage: 'Internal Server Error.. ${res is http.Response ? res.body : res.data}')),
         );
       case 501:
         return Failure(
           ErrorResponse(
-              unifiedHttpClientEnum:
-                  UnifiedHttpClientEnum.serverNotSupportError,
+              unifiedHttpClientEnum: UnifiedHttpClientEnum.serverNotSupportError,
               errorResponseHolder: ErrorResponseHolder(
                   defaultMessage: 'Server does not support this functionality',
                   responseBody: res.body,
-                  customMessage:
-                      'server not supported... ${res is http.Response ? res.body : res.data}')),
+                  customMessage: 'server not supported... ${res is http.Response ? res.body : res.data}')),
         );
       case 503:
         return Failure(
           ErrorResponse(
-              unifiedHttpClientEnum:
-                  UnifiedHttpClientEnum.serverUnavailableError,
+              unifiedHttpClientEnum: UnifiedHttpClientEnum.serverUnavailableError,
               errorResponseHolder: ErrorResponseHolder(
                   responseBody: res.body,
                   defaultMessage: 'Server Not Available..',
-                  customMessage:
-                      'Server Not available... ${res is http.Response ? res.body : res.data}')),
+                  customMessage: 'Server Not available... ${res is http.Response ? res.body : res.data}')),
         );
       case 504:
         return Failure(
@@ -178,8 +207,7 @@ class UnifiedHttpClient {
               errorResponseHolder: ErrorResponseHolder(
                   defaultMessage: 'server time out on ${res.request?.url}..',
                   responseBody: res.body,
-                  customMessage:
-                      'server request time out.. ${res is http.Response ? res.body : res.data}')),
+                  customMessage: 'server request time out.. ${res is http.Response ? res.body : res.data}')),
         );
 
       default:
@@ -194,17 +222,13 @@ class UnifiedHttpClient {
   }
 
   /// get request
-  static Future<Result> get(String endpoint,
-      {int timeout = 3,
-      Map<String, dynamic>? queryPara,
-      Map<String, String>? headers}) async {
+  static Future<Result> get(String endpoint, {int timeout = 3, Map<String, dynamic>? queryPara, Map<String, String>? headers}) async {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
     }
     if (useHttp) {
       final res = await PackageHttp.getRequest(
-        url: PackageHttp.getUriFromEndpoints(
-            endpoint: endpoint, queryParams: queryPara),
+        url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
         headers: headers,
       );
 
@@ -214,8 +238,7 @@ class UnifiedHttpClient {
       debugPrint("api call was on  : ${(res as http.Response).request?.url}");
       return mapHttpResponseToResult(res);
     } else {
-      final res = await PackageDio.dioGet(
-          urlPath: endpoint, headers: headers, queryPara: queryPara);
+      final res = await PackageDio.dioGet(urlPath: endpoint, headers: headers, queryPara: queryPara);
 
       if (res.runtimeType == Failure) {
         return res as Failure;
@@ -225,18 +248,13 @@ class UnifiedHttpClient {
   }
 
   /// POST request
-  static Future<Result> post(String endpoint,
-      {int timeout = 3,
-      Map<String, dynamic>? queryPara,
-      dynamic body,
-      Map<String, String>? headers}) async {
+  static Future<Result> post(String endpoint, {int timeout = 3, Map<String, dynamic>? queryPara, dynamic body, Map<String, String>? headers}) async {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
     }
     if (useHttp) {
       final res = await PackageHttp.postRequest(
-        url: PackageHttp.getUriFromEndpoints(
-            endpoint: endpoint, queryParams: queryPara),
+        url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
         headers: headers,
         body: body,
       );
@@ -246,8 +264,7 @@ class UnifiedHttpClient {
       }
       return mapHttpResponseToResult(res);
     } else {
-      final res = await PackageDio.dioPost(
-          urlPath: endpoint, headers: headers, queryPara: queryPara);
+      final res = await PackageDio.dioPost(urlPath: endpoint, headers: headers, queryPara: queryPara);
       debugPrint("response in post request :$res");
       if (res.runtimeType == Failure) {
         return res as Failure;
@@ -258,17 +275,13 @@ class UnifiedHttpClient {
 
   /// Delete request
   static Future<Result> delete(String endpoint,
-      {int timeout = 3,
-      Map<String, dynamic>? queryPara,
-      dynamic body,
-      Map<String, String>? headers}) async {
+      {int timeout = 3, Map<String, dynamic>? queryPara, dynamic body, Map<String, String>? headers}) async {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
     }
     if (useHttp) {
       final res = await PackageHttp.deleteRequest(
-        url: PackageHttp.getUriFromEndpoints(
-            endpoint: endpoint, queryParams: queryPara),
+        url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
         headers: headers,
       );
 
@@ -277,8 +290,7 @@ class UnifiedHttpClient {
       }
       return mapHttpResponseToResult(res);
     } else {
-      final res = await PackageDio.dioDelete(
-          urlPath: endpoint, headers: headers, queryPara: queryPara);
+      final res = await PackageDio.dioDelete(urlPath: endpoint, headers: headers, queryPara: queryPara);
       debugPrint("response in post request :$res");
       if (res.runtimeType == Failure) {
         return res as Failure;
@@ -317,8 +329,7 @@ class UnifiedHttpClient {
     }
     if (useHttp) {
       final res = await PackageHttp.multipartRequest(
-        url: PackageHttp.getUriFromEndpoints(
-            endpoint: endpoint, queryParams: queryPara),
+        url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
         headers: headers,
         files: files,
         fields: fields,
@@ -343,168 +354,6 @@ class UnifiedHttpClient {
       return mapDioResponseToResult(res);
     }
   }
-
-  /// use ErrorHandelerFlutter().get() for API GET request.
-  /// it will convert Response into Result
-  /// use Success or Failure to get information about response
-  /// ```
-  ///   switch (resp) {
-  ///        case Success(value: dynamic val):
-  ///                 debugPrint(val);
-  ///                  break;
-  ///        case Failure(error: ErrorResponse res):
-  ///                 debugPrint(res);
-  /// ```
-  // Future<Result> get(String url,
-  //     {int timeout = 3, Map<String, String>? headers}) async {
-  //   try {
-  //     if (!await InternetConnectionChecker().hasConnection) {
-  //       CustomSnackbar().showNoInternetSnackbar();
-  //     }
-  //     print("fetching data from : $url");
-  //     final response = await http
-  //         .get(Uri.parse(url), headers: headers)
-  //         .timeout(Duration(seconds: timeout));
-  //
-  //     switch (response.statusCode) {
-  //       case >= 200 && < 300:
-  //         return Success(response.body);
-  //       case >= 400:
-  //         return findErrorFromStatusCode(
-  //             code: response.statusCode, response: response);
-  //       default:
-  //         return Failure(ErrorResponse(
-  //             unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
-  //             errorResponseHolder: ErrorResponseHolder(
-  //                 defaultMessage: 'Something Went Wrnog..')));
-  //     }
-  //   } on PlatformException {
-  //     return Failure(ErrorResponse(
-  //         UnifiedHttpClientEnum:
-  //             UnifiedHttpClientEnum.platformExceptionError,
-  //         errorResponseHolder: ErrorResponseHolder(
-  //             defaultMessage: 'Platform Exception Caught')));
-  //   } on SocketException catch (e) {
-  //     return Failure(ErrorResponse(
-  //         UnifiedHttpClientEnum:
-  //             UnifiedHttpClientEnum.socketExceptionError,
-  //         errorResponseHolder:
-  //             ErrorResponseHolder(defaultMessage: 'Socket Exception:$e')));
-  //   } on FormatException {
-  //     return Failure(ErrorResponse(
-  //         UnifiedHttpClientEnum:
-  //             UnifiedHttpClientEnum.formatExceptionError,
-  //         errorResponseHolder:
-  //             ErrorResponseHolder(defaultMessage: 'format exception Error')));
-  //   } catch (e) {
-  //     return Failure(ErrorResponse(
-  //         UnifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
-  //         errorResponseHolder: ErrorResponseHolder(
-  //             defaultMessage: 'something went Wrong : $e')));
-  //   }
-  // }
-
-  /// use ErrorHandelerFlutter().post() for API GET request.
-  /// it will convert Response into Result
-  /// use Success or Failure to get information about response
-  /// ```
-  ///   switch (resp) {
-  ///        case Success(value: dynamic val):
-  ///                 debugPrint(val);
-  ///                  break;
-  ///        case Failure(error: ErrorResponse res):
-  ///                 debugPrint(res);
-  /// ```
-  // Future<Result<dynamic>> post(String url,
-  //     {int timeout = 3,
-  //     Map<String, String>? headers,
-  //     required String body}) async {
-  //   try {
-  //     if (!await InternetConnectionChecker().hasConnection) {
-  //       CustomSnackbar().showNoInternetSnackbar();
-  //     }
-  //     debugPrint("fetching data from url :$url");
-  //     final response = await http
-  //         .post(Uri.parse(url), headers: headers, body: body)
-  //         .timeout(Duration(seconds: timeout));
-  //     debugPrint("response : ${response.body},statud :${response.statusCode}");
-  //     switch (response.statusCode) {
-  //       case >= 200 && < 300:
-  //         return Success(response.body);
-  //       case >= 400:
-  //         return findErrorFromStatusCode(
-  //             code: response.statusCode, response: response);
-  //       default:
-  //         return Failure(ErrorResponse(
-  //             UnifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
-  //             errorResponseHolder: ErrorResponseHolder(
-  //                 defaultMessage: 'Something Went wrong..')));
-  //     }
-  //   } on PlatformException {
-  //     return Failure(ErrorResponse(
-  //         UnifiedHttpClientEnum:
-  //             UnifiedHttpClientEnum.platformExceptionError,
-  //         errorResponseHolder: ErrorResponseHolder(
-  //             defaultMessage: 'Platform Exception Caught')));
-  //   } on SocketException catch (e) {
-  //     return Failure(ErrorResponse(
-  //         UnifiedHttpClientEnum:
-  //             UnifiedHttpClientEnum.socketExceptionError,
-  //         errorResponseHolder:
-  //             ErrorResponseHolder(defaultMessage: 'Socket Exception:$e')));
-  //   } on FormatException {
-  //     return Failure(ErrorResponse(
-  //         UnifiedHttpClientEnum:
-  //             UnifiedHttpClientEnum.formatExceptionError,
-  //         errorResponseHolder:
-  //             ErrorResponseHolder(defaultMessage: 'format exception Error')));
-  //   } catch (e) {
-  //     debugPrint("error occurs  :$e");
-  //     return Failure(ErrorResponse(
-  //         UnifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
-  //         errorResponseHolder: ErrorResponseHolder(
-  //             defaultMessage: 'something went Wrong : $e')));
-  //   }
-//   // }
-//   /// returns errorResponse holder
-//   ErrorResponseHolder getErrorFromEnum(
-//       UnifiedHttpClientEnum errorEnum, String body) {
-//     return getEnumMap(responseBody: body)[errorEnum] ??
-//         ErrorResponseHolder(
-//             defaultMessage: 'Something Went Wrong..', responseBody: body);
-//   }
-//
-//   /// return Map of Enum as key and ErrorResponseHolder as Value
-//   Map<UnifiedHttpClientEnum, ErrorResponseHolder> getEnumMap({
-//     String? customMessage,
-//     required String responseBody,
-//   }) =>
-//       {
-//         UnifiedHttpClientEnum.badRequestError: (ErrorResponseHolder(
-//             defaultMessage: 'Bad Request kindly check your request body',
-//             responseBody: responseBody)),
-//         UnifiedHttpClientEnum.unAuthorizationError: (ErrorResponseHolder(
-//             defaultMessage: 'You are not authrized to make request',
-//             responseBody: responseBody)),
-//         UnifiedHttpClientEnum.forbiddenError: (ErrorResponseHolder(
-//             defaultMessage: 'You are forbid to make request',
-//             responseBody: responseBody)),
-//         UnifiedHttpClientEnum.timeOutError: (ErrorResponseHolder(
-//             defaultMessage: 'Unable to fetch reponse within given time',
-//             responseBody: responseBody)),
-//         UnifiedHttpClientEnum.serverUnavailableError: (ErrorResponseHolder(
-//           defaultMessage: 'Server is not Available at this Time',
-//         )),
-//         UnifiedHttpClientEnum.internalServerError: (ErrorResponseHolder(
-//             defaultMessage:
-//                 'Internal Server Error,unable to make request to the server')),
-//         UnifiedHttpClientEnum.notFoundError: (ErrorResponseHolder(
-//             defaultMessage: 'Unable to reach to the Server, Server Not Found',
-//             responseBody: responseBody)),
-//         UnifiedHttpClientEnum.undefined: (ErrorResponseHolder(
-//             defaultMessage: 'Something went wrong...',
-//             responseBody: responseBody)),
-//       };
 }
 
 /// A Class to Hold Error response in Structured manner
@@ -519,10 +368,7 @@ class ErrorResponseHolder {
   String? responseBody;
 
   /// constructor
-  ErrorResponseHolder(
-      {required this.defaultMessage,
-      this.responseBody,
-      this.customMessage = ''});
+  ErrorResponseHolder({required this.defaultMessage, this.responseBody, this.customMessage = ''});
 }
 
 /// Enum class for all the exceptions and statusCodes

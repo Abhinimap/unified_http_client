@@ -13,6 +13,8 @@ class PackageHttp {
 
   static http.Client? _client;
   static String? _host;
+
+  /// '/api/v1/'
   static String? _prefix;
 
   /// define host and prefix so that
