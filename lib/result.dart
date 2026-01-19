@@ -6,7 +6,7 @@ sealed class Result<R> {
 }
 
 /// Inherit Result class and contains Successfull response of API Reuest
-class Success<R> extends Result {
+class Success<R> extends Result<R> {
   /// contains a dynamic Success value
   final R value;
 
@@ -16,7 +16,7 @@ class Success<R> extends Result {
 
 /// Inherited from Result class
 /// This class represent Failed response from the API request
-class Failure<E extends ErrorResponse> extends Result {
+class Failure<E extends ErrorResponse> extends Result<Never> {
   /// Contains information about Failure of the APi request
   final ErrorResponse error;
 
@@ -33,6 +33,5 @@ class ErrorResponse {
   ErrorResponseHolder errorResponseHolder;
 
   /// constructor
-  ErrorResponse(
-      {required this.unifiedHttpClientEnum, required this.errorResponseHolder});
+  ErrorResponse({required this.unifiedHttpClientEnum, required this.errorResponseHolder});
 }
