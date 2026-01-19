@@ -7,3 +7,5 @@
 - multipart request added
 ## 0.0.3
 - unified interceptors
+## 0.0.4
+- dynamic type added
