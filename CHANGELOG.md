@@ -5,3 +5,5 @@
 - Built-in internet connectivity check
 ## 0.0.2
 - multipart request added
+## 0.0.3
+- unified interceptors
