@@ -1,16 +1,29 @@
-# example
+# Unified HTTP Client Example
 
-A new Flutter project.
+This sample shows how to initialize the unified client once and use the same API surface for both `dio` and `http` under the hood.
 
-## Getting Started
+Key steps:
 
-This project is a starting point for a Flutter application.
+1) Call `UnifiedHttpClient().init(...)` early in `main.dart`
+```
+UnifiedHttpClient().init(
+  usehttp: false, // switch to true to use the http client instead of dio
+  baseUrl: 'https://66c45adfb026f3cc6ceefd10.mockapi.io',
+  showLogs: true,
+  interceptors: [
+    ApiInterceptor(
+      onRequestOverride: (req) {
+        req.headers['X-Demo-Header'] = 'demo';
+        return req;
+      },
+    ),
+  ],
+);
+```
 
-A few resources to get you started if this is your first Flutter project:
+2) Use the static helpers from `UnifiedHttpClient` anywhere in the app:
+```
+final result = await UnifiedHttpClient.get('/data/postdata');
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+No direct `dio` or `http` imports are needed in your app code—only the unified package. The default `ApiInterceptor` can log traffic, and you can add more interceptors to customize requests/responses/errors.

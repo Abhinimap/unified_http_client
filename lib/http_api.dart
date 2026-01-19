@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:unified_http_client/error_handeler.dart';
 import 'package:unified_http_client/result.dart';
+import 'package:unified_http_client/unified_interceptor.dart';
 
 /// This will be used for HTTP Api requests
 class PackageHttp {
@@ -13,6 +14,7 @@ class PackageHttp {
 
   static http.Client? _client;
   static String? _host;
+  static List<UnifiedInterceptor> _interceptors = <UnifiedInterceptor>[];
 
   /// '/api/v1/'
   static String? _prefix;
@@ -22,6 +24,11 @@ class PackageHttp {
   static setup({String? host, String? prefix}) {
     _host = host;
     _prefix = prefix;
+  }
+
+  /// Configure unified interceptors (invoked from UnifiedHttpClient.init)
+  static void configureInterceptors(List<UnifiedInterceptor> interceptors) {
+    _interceptors = interceptors;
   }
 
   /// it will create uri from given endpoint with including baseurl
@@ -43,25 +50,44 @@ class PackageHttp {
   /// Http get request
   static getRequest({required Uri url, Map<String, String>? headers}) async {
     try {
-      debugPrint('requesting on  :$url');
-      if (_client != null) {
-        return await _client!.get(url, headers: headers);
-      } else {
-        return await http.get(url, headers: headers);
-      }
-    } on PlatformException {
+      UnifiedRequest prepared = await UnifiedInterceptorRunner.runOnRequest(
+        UnifiedRequest(method: 'GET', uri: url, headers: headers),
+        _interceptors,
+      );
+      final targetUrl = prepared.uri;
+
+      debugPrint('requesting on  :$targetUrl');
+      final response = _client != null
+          ? await _client!.get(targetUrl, headers: prepared.headers)
+          : await http.get(targetUrl, headers: prepared.headers);
+
+      await UnifiedInterceptorRunner.runOnResponse(
+        UnifiedResponse(
+          statusCode: response.statusCode,
+          data: response.body,
+          headers: response.headers,
+          request: prepared,
+        ),
+        _interceptors,
+      );
+      return response;
+    } on PlatformException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'GET', uri: url, headers: headers));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.platformExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Platform Exception Caught')));
-    } on SocketException catch (e) {
+    } on SocketException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'GET', uri: url, headers: headers));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.socketExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Socket Exception:$e')));
-    } on FormatException {
+    } on FormatException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'GET', uri: url, headers: headers));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.formatExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'format exception Error')));
-    } catch (e) {
+    } catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'GET', uri: url, headers: headers));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'something went Wrong : $e')));
@@ -71,25 +97,43 @@ class PackageHttp {
   /// Http post request
   static postRequest({required Uri url, Map<String, String>? headers, required dynamic body}) async {
     try {
-      debugPrint('requesting post : $url');
-      if (_client != null) {
-        return await _client!.post(url, headers: headers, body: json.encode(body));
-      } else {
-        return await http.post(url, headers: headers, body: json.encode(body));
-      }
-    } on PlatformException {
+      UnifiedRequest prepared = await UnifiedInterceptorRunner.runOnRequest(
+        UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body),
+        _interceptors,
+      );
+
+      debugPrint('requesting post : ${prepared.uri}');
+      final response = _client != null
+          ? await _client!.post(prepared.uri, headers: prepared.headers, body: json.encode(prepared.body))
+          : await http.post(prepared.uri, headers: prepared.headers, body: json.encode(prepared.body));
+
+      await UnifiedInterceptorRunner.runOnResponse(
+        UnifiedResponse(
+          statusCode: response.statusCode,
+          data: response.body,
+          headers: response.headers,
+          request: prepared,
+        ),
+        _interceptors,
+      );
+      return response;
+    } on PlatformException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.platformExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Platform Exception Caught')));
-    } on SocketException catch (e) {
+    } on SocketException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.socketExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Socket Exception:$e')));
-    } on FormatException {
+    } on FormatException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.formatExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'format exception Error')));
-    } catch (e) {
+    } catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'something went Wrong : $e')));
@@ -99,25 +143,42 @@ class PackageHttp {
   /// Http get request
   static deleteRequest({required Uri url, Map<String, String>? headers}) async {
     try {
-      debugPrint('requesting on  :$url');
-      if (_client != null) {
-        return await _client!.delete(url, headers: headers);
-      } else {
-        return await http.delete(url, headers: headers);
-      }
-    } on PlatformException {
+      final prepared = await UnifiedInterceptorRunner.runOnRequest(
+        UnifiedRequest(method: 'DELETE', uri: url, headers: headers),
+        _interceptors,
+      );
+      debugPrint('requesting on  :${prepared.uri}');
+      final response = _client != null
+          ? await _client!.delete(prepared.uri, headers: prepared.headers)
+          : await http.delete(prepared.uri, headers: prepared.headers);
+
+      await UnifiedInterceptorRunner.runOnResponse(
+        UnifiedResponse(
+          statusCode: response.statusCode,
+          data: response.body,
+          headers: response.headers,
+          request: prepared,
+        ),
+        _interceptors,
+      );
+      return response;
+    } on PlatformException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'DELETE', uri: url, headers: headers));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.platformExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Platform Exception Caught')));
-    } on SocketException catch (e) {
+    } on SocketException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'DELETE', uri: url, headers: headers));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.socketExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Socket Exception:$e')));
-    } on FormatException {
+    } on FormatException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'DELETE', uri: url, headers: headers));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.formatExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'format exception Error')));
-    } catch (e) {
+    } catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'DELETE', uri: url, headers: headers));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'something went Wrong : $e')));
@@ -127,24 +188,42 @@ class PackageHttp {
   /// Http put request
   static putRequest({required Uri url, Map<String, String>? headers, required Map<String, dynamic> body}) async {
     try {
-      if (_client != null) {
-        return await _client!.put(url, headers: headers, body: json.encode(body));
-      } else {
-        return await http.put(url, headers: headers, body: body);
-      }
-    } on PlatformException {
+      final prepared = await UnifiedInterceptorRunner.runOnRequest(
+        UnifiedRequest(method: 'PUT', uri: url, headers: headers, body: body),
+        _interceptors,
+      );
+
+      final response = _client != null
+          ? await _client!.put(prepared.uri, headers: prepared.headers, body: json.encode(prepared.body))
+          : await http.put(prepared.uri, headers: prepared.headers, body: prepared.body);
+
+      await UnifiedInterceptorRunner.runOnResponse(
+        UnifiedResponse(
+          statusCode: response.statusCode,
+          data: response.body,
+          headers: response.headers,
+          request: prepared,
+        ),
+        _interceptors,
+      );
+      return response;
+    } on PlatformException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'PUT', uri: url, headers: headers, body: body));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.platformExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Platform Exception Caught')));
-    } on SocketException catch (e) {
+    } on SocketException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'PUT', uri: url, headers: headers, body: body));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.socketExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Socket Exception:$e')));
-    } on FormatException {
+    } on FormatException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'PUT', uri: url, headers: headers, body: body));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.formatExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'format exception Error')));
-    } catch (e) {
+    } catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'PUT', uri: url, headers: headers, body: body));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'something went Wrong : $e')));
@@ -176,22 +255,31 @@ class PackageHttp {
     Map<String, String>? fields,
   }) async {
     try {
-      debugPrint('requesting multipart : $url');
-      final request = http.MultipartRequest('POST', url);
+      final prepared = await UnifiedInterceptorRunner.runOnRequest(
+        UnifiedRequest(method: 'POST', uri: url, headers: headers, body: {'files': files, 'fields': fields}),
+        _interceptors,
+      );
+
+      debugPrint('requesting multipart : ${prepared.uri}');
+      final request = http.MultipartRequest('POST', prepared.uri);
 
       // Add headers if provided
-      if (headers != null) {
-        request.headers.addAll(headers);
+      if (prepared.headers.isNotEmpty) {
+        request.headers.addAll(prepared.headers);
       }
 
+      final processedBody = prepared.body is Map<String, dynamic> ? prepared.body as Map<String, dynamic> : <String, dynamic>{};
+      final processedFields = (processedBody['fields'] ?? fields) as Map<String, String>?;
+      final processedFiles = (processedBody['files'] ?? files) as Map<String, Map<String, dynamic>>?;
+
       // Add form fields
-      if (fields != null) {
-        request.fields.addAll(fields);
+      if (processedFields != null) {
+        request.fields.addAll(processedFields);
       }
 
       // Add files
-      if (files != null) {
-        for (final entry in files.entries) {
+      if (processedFiles != null) {
+        for (final entry in processedFiles.entries) {
           final fieldName = entry.key;
           final fileData = entry.value;
 
@@ -258,23 +346,44 @@ class PackageHttp {
 
       // Convert streamed response to regular response
       final response = await http.Response.fromStream(streamedResponse);
+      await UnifiedInterceptorRunner.runOnResponse(
+        UnifiedResponse(
+          statusCode: response.statusCode,
+          data: response.body,
+          headers: response.headers,
+          request: prepared,
+        ),
+        _interceptors,
+      );
       return response;
-    } on PlatformException {
+    } on PlatformException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: {'files': files, 'fields': fields}));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.platformExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Platform Exception Caught')));
-    } on SocketException catch (e) {
+    } on SocketException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: {'files': files, 'fields': fields}));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.socketExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Socket Exception:$e')));
-    } on FormatException {
+    } on FormatException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: {'files': files, 'fields': fields}));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.formatExceptionError,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'format exception Error')));
-    } catch (e) {
+    } catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: {'files': files, 'fields': fields}));
       return Failure(ErrorResponse(
           unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'something went Wrong : $e')));
     }
+  }
+
+  static Future<void> _notifyError(Object error, StackTrace stackTrace, {UnifiedRequest? request, UnifiedResponse? response}) async {
+    if (_interceptors.isEmpty) return;
+    await UnifiedInterceptorRunner.runOnError(
+      UnifiedError(error: error, stackTrace: stackTrace, request: request, response: response),
+      _interceptors,
+    );
   }
 }

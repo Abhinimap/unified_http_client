@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:unified_http_client/error_handeler.dart';
-import 'package:unified_http_client/result.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:unified_http_client/error_handeler.dart';
+import 'package:unified_http_client/result.dart';
+import 'package:unified_http_client/unified_interceptor.dart';
+import 'package:unified_http_client/unified_options.dart';
 
 /// use this class to do
 /// DIO APi Request
@@ -12,21 +14,24 @@ class PackageDio {
   PackageDio._();
   static final Dio _dio = Dio();
   static BaseOptions? _baseOptions = BaseOptions();
-  static List<Interceptor>? _interceptors;
+  static List<UnifiedInterceptor> _unifiedInterceptors = <UnifiedInterceptor>[];
 
   /// setup dio
   static void setUpDio() {
     try {
       _dio.options = _baseOptions!;
-      _dio.interceptors.addAll(_interceptors!);
+      _dio.interceptors.clear();
+      if (_unifiedInterceptors.isNotEmpty) {
+        _dio.interceptors.add(_UnifiedDioInterceptor(_unifiedInterceptors));
+      }
     } catch (e) {
       throw "something went wrong $e";
     }
   }
 
-  /// set interceptors
-  static void addInterceptors(List<Interceptor> interceptors) {
-    _interceptors = interceptors;
+  /// set unified interceptors
+  static void addInterceptors(List<UnifiedInterceptor> interceptors) {
+    _unifiedInterceptors = interceptors;
   }
 
   /// call this function to set base options of Dio client
@@ -38,13 +43,11 @@ class PackageDio {
     Duration? sendTimeout,
     Map<String, Object?>? extra,
     Map<String, Object?>? headers,
-    ResponseType? responseType,
+    UnifiedResponseType? responseType,
     String? contentType,
     bool? followRedirects,
     int? maxRedirects,
     bool? persistentConnection,
-    RequestEncoder? requestEncoder,
-    ResponseDecoder? responseDecoder,
   }) {
     _baseOptions = BaseOptions(
       baseUrl: baseUrl ?? '',
@@ -54,10 +57,8 @@ class PackageDio {
       sendTimeout: sendTimeout,
       connectTimeout: connectTimeout,
       receiveTimeout: receiveTimeout,
-      requestEncoder: requestEncoder,
-      responseDecoder: responseDecoder,
       contentType: contentType,
-      responseType: responseType,
+      responseType: _mapResponseType(responseType),
       maxRedirects: maxRedirects,
       followRedirects: followRedirects,
       persistentConnection: persistentConnection,
@@ -239,5 +240,132 @@ class PackageDio {
           unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
           errorResponseHolder: ErrorResponseHolder(defaultMessage: 'something went Wrong : $e')));
     }
+  }
+}
+
+ResponseType? _mapResponseType(UnifiedResponseType? type) {
+  switch (type) {
+    case UnifiedResponseType.json:
+      return ResponseType.json;
+    case UnifiedResponseType.stream:
+      return ResponseType.stream;
+    case UnifiedResponseType.plain:
+      return ResponseType.plain;
+    case UnifiedResponseType.bytes:
+      return ResponseType.bytes;
+    case null:
+      return null;
+  }
+}
+
+class _UnifiedDioInterceptor extends Interceptor {
+  _UnifiedDioInterceptor(this.interceptors);
+
+  final List<UnifiedInterceptor> interceptors;
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+    try {
+      final unifiedRequest = await UnifiedInterceptorRunner.runOnRequest(
+        UnifiedRequest(
+          method: options.method,
+          uri: options.uri,
+          headers: options.headers.map((k, v) => MapEntry(k, v.toString())),
+          body: options.data,
+        ),
+        interceptors,
+      );
+
+      options
+        ..headers = unifiedRequest.headers
+        ..data = unifiedRequest.body;
+
+      final overrideUri = unifiedRequest.uri;
+      if (overrideUri.hasScheme && overrideUri.hasAuthority) {
+        options.baseUrl = '${overrideUri.scheme}://${overrideUri.authority}';
+      }
+      if (overrideUri.path.isNotEmpty) {
+        options.path = overrideUri.path;
+      }
+      if (overrideUri.queryParameters.isNotEmpty) {
+        options.queryParameters = overrideUri.queryParameters;
+      }
+
+      return handler.next(options);
+    } catch (e, st) {
+      final error = await UnifiedInterceptorRunner.runOnError(
+        UnifiedError(error: e, stackTrace: st),
+        interceptors,
+      );
+      return handler.reject(
+        DioException(requestOptions: options, error: error.error, stackTrace: error.stackTrace),
+      );
+    }
+  }
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) async {
+    try {
+      final unifiedResponse = await UnifiedInterceptorRunner.runOnResponse(
+        UnifiedResponse(
+          statusCode: response.statusCode,
+          data: response.data,
+          headers: response.headers.map,
+          request: UnifiedRequest(
+            method: response.requestOptions.method,
+            uri: response.requestOptions.uri,
+            headers: response.requestOptions.headers.map((k, v) => MapEntry(k, v.toString())),
+            body: response.requestOptions.data,
+          ),
+        ),
+        interceptors,
+      );
+      response.data = unifiedResponse.data;
+      return handler.next(response);
+    } catch (e, st) {
+      final error = await UnifiedInterceptorRunner.runOnError(
+        UnifiedError(error: e, stackTrace: st),
+        interceptors,
+      );
+      return handler.reject(
+        DioException(requestOptions: response.requestOptions, error: error.error, stackTrace: error.stackTrace),
+      );
+    }
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    final request = UnifiedRequest(
+      method: err.requestOptions.method,
+      uri: err.requestOptions.uri,
+      headers: err.requestOptions.headers.map((k, v) => MapEntry(k, v.toString())),
+      body: err.requestOptions.data,
+    );
+    final response = err.response == null
+        ? null
+        : UnifiedResponse(
+            statusCode: err.response?.statusCode,
+            data: err.response?.data,
+            headers: err.response?.headers.map,
+            request: request,
+          );
+    final processedError = await UnifiedInterceptorRunner.runOnError(
+      UnifiedError(
+        error: err.error ?? err,
+        stackTrace: err.stackTrace,
+        request: request,
+        response: response,
+      ),
+      interceptors,
+    );
+    return handler.reject(
+      DioException(
+        requestOptions: err.requestOptions,
+        response: err.response,
+        error: processedError.error,
+        stackTrace: processedError.stackTrace,
+        type: err.type,
+      ),
+    );
   }
 }

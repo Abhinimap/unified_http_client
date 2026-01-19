@@ -1,26 +1,28 @@
-import 'package:unified_http_client/dio_api.dart';
-import 'package:unified_http_client/error_handeler.dart';
-import 'package:unified_http_client/http_api.dart';
 import 'package:example/controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
+import 'package:unified_http_client/error_handeler.dart';
 import 'package:unified_http_client/internet_checker.dart';
 import 'package:unified_http_client/result.dart';
 import 'package:unified_http_client/snackbar.dart';
+import 'package:unified_http_client/unified_interceptor.dart';
 
 void main() async {
-  // set whether to use http or Dio, by default it will use HTTP
-  UnifiedHttpClient().init(usehttp: false);
-
-  // setup DIO
-  PackageDio.addInterceptors([]);
-  PackageDio.setBaseOptions(
-      baseUrl: 'https://66c45adfb026f3cc6ceefd10.mockapi.io');
-  PackageDio.setUpDio();
-  // setup HTTP
-  PackageHttp.setupClient(client: http.Client());
-  PackageHttp.setup(host: '66c45adfb026f3cc6ceefd10.mockapi.io', prefix: '');
+  /// Single entry point: pick http/dio, base url, logging and extra interceptors
+  UnifiedHttpClient().init(
+    usehttp: false, // set true to use the http package instead of dio
+    baseUrl: 'https://66c45adfb026f3cc6ceefd10.mockapi.io',
+    showLogs: true,
+    interceptors: [
+      // optional extra interceptor to inject headers or inspect payloads
+      ApiInterceptor(
+        onRequestOverride: (req) {
+          req.headers['X-Demo-Header'] = 'demo';
+          return req;
+        },
+      ),
+    ],
+  );
 
   runApp(const MyApp());
 }
@@ -52,7 +54,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool isConnected = false;
-  Map? _result;
   ErrorResponse? failure;
 
   // enter your own url to test

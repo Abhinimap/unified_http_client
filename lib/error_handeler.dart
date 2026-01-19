@@ -1,11 +1,12 @@
-import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:unified_http_client/dio_api.dart';
 import 'package:unified_http_client/http_api.dart';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:unified_http_client/internet_checker.dart';
 import 'package:unified_http_client/result.dart';
 import 'package:unified_http_client/snackbar.dart';
+import 'package:unified_http_client/unified_interceptor.dart';
+import 'package:unified_http_client/unified_options.dart';
 
 /// A class to provide error Handeling functionality
 /// This uses Http as default Scheme and showSnackbar is default set to True
@@ -17,12 +18,15 @@ class UnifiedHttpClient {
 
   /// default set to True
   static bool showSnackbar = true;
+  static bool showLogs = false;
+  static List<UnifiedInterceptor> _interceptors = <UnifiedInterceptor>[];
 
   /// by default it will use http and show snackbar
   void init({
     bool? usehttp,
     bool? showSnackbar,
-    List<Interceptor>? dioInterceptors,
+    bool? showLogs,
+    List<UnifiedInterceptor>? interceptors,
     String? baseUrl,
     Map<String, dynamic>? queryParameters,
     Duration? connectTimeout,
@@ -30,22 +34,23 @@ class UnifiedHttpClient {
     Duration? sendTimeout,
     Map<String, Object?>? extra,
     Map<String, Object?>? headers,
-    ResponseType? responseType,
+    UnifiedResponseType? responseType,
     String? contentType,
     bool? followRedirects,
     int? maxRedirects,
     bool? persistentConnection,
-    RequestEncoder? requestEncoder,
-    ResponseDecoder? responseDecoder,
   }) {
     useHttp = usehttp ?? true;
     showSnackbar = showSnackbar ?? true;
+    showLogs = showLogs ?? false;
+    _interceptors = <UnifiedInterceptor>[
+      ApiInterceptor(showLogs: UnifiedHttpClient.showLogs),
+      ...?interceptors,
+    ];
 
     // DIO Setup
     if (!useHttp) {
-      if (dioInterceptors != null && dioInterceptors.isNotEmpty) {
-        PackageDio.addInterceptors(dioInterceptors);
-      }
+      PackageDio.addInterceptors(_interceptors);
       PackageDio.setBaseOptions(
         baseUrl: baseUrl,
         connectTimeout: connectTimeout,
@@ -59,8 +64,6 @@ class UnifiedHttpClient {
         persistentConnection: persistentConnection,
         queryParameters: queryParameters,
         sendTimeout: sendTimeout,
-        requestEncoder: requestEncoder,
-        responseDecoder: responseDecoder,
       );
       PackageDio.setUpDio();
     }
@@ -68,6 +71,7 @@ class UnifiedHttpClient {
     // HTTP Setup
     else {
       PackageHttp.setup(host: baseUrl ?? '');
+      PackageHttp.configureInterceptors(_interceptors);
     }
   }
 
