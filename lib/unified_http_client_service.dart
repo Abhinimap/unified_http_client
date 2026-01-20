@@ -138,7 +138,7 @@ class UnifiedHttpClient {
     if (resp.status == 200) {
       return Success(resp.data);
     } else {
-      if (resp.isEmpty()) {
+      if (resp.isEmpty() || resp.message.isEmpty) {
         return NimapFailure('Something went wrong with status code : ${response.statusCode}');
       }
       return NimapFailure(resp.message);
@@ -151,7 +151,7 @@ class UnifiedHttpClient {
     if (resp.status == 200) {
       return Success(resp.data);
     } else {
-      if (resp.isEmpty()) {
+      if (resp.isEmpty() || resp.message.isEmpty) {
         return NimapFailure('Something went wrong with status code : ${response.statusCode}');
       }
       return NimapFailure(resp.message);
