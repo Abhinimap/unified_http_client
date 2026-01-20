@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:unified_http_client/error_handeler.dart';
 import 'package:unified_http_client/result.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:unified_http_client/unified_http_client_service.dart';
 
 class ApiController extends GetxController {
   var responsebody = ''.obs;
@@ -29,9 +29,7 @@ class ApiController extends GetxController {
     // await UnifiedHttpClient.post('/data/postdata', body: '');
     switch (response) {
       case Success(value: dynamic data):
-        result.value = UnifiedHttpClient.useHttp
-            ? (await json.decode(data.body)).toString()
-            : data.data.toString();
+        result.value = UnifiedHttpClient.useHttp ? (await json.decode(data.body)).toString() : data.data.toString();
         debugPrint('result  :$data');
         break;
       case Failure(error: ErrorResponse resp):
@@ -51,8 +49,7 @@ class ApiController extends GetxController {
             debugPrint('404 , Api endpoint not found');
             break;
           default:
-            debugPrint(
-                'Not matched in main cases : ${resp.unifiedHttpClientEnum.name} ${resp.errorResponseHolder.defaultMessage}');
+            debugPrint('Not matched in main cases : ${resp.unifiedHttpClientEnum.name} ${resp.errorResponseHolder.defaultMessage}');
         }
         break;
       default:

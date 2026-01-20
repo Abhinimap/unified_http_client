@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:unified_http_client/dio_api.dart';
 import 'package:unified_http_client/http_api.dart';
 import 'package:http/http.dart' as http;
 import 'package:unified_http_client/internet_checker.dart';
+import 'package:unified_http_client/nimap_base_model.dart';
 import 'package:unified_http_client/result.dart';
 import 'package:unified_http_client/snackbar.dart';
 import 'package:unified_http_client/unified_interceptor.dart';
@@ -116,6 +119,34 @@ class UnifiedHttpClient {
               unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
               errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Something went wrong', responseBody: response.body)));
       }
+    }
+  }
+
+  /// map response into Result
+  static Result mapNimapHttpResponseToResult(http.Response response) {
+    if (response.statusCode == 200) {
+      final resp = NimapBaseModel.fromJson(jsonDecode(response.body));
+      if (resp.status == 200) {
+        return Success(resp.data);
+      } else {
+        return NimapFailure(resp.message);
+      }
+    } else {
+      return NimapFailure('Error: ${response.body}');
+    }
+  }
+
+  /// map Dio response into Result
+  static Result mapNimapDioResponseToResult(response) {
+    if (response.statusCode == 200) {
+      final resp = NimapBaseModel.fromJson(response.data);
+      if (resp.status == 200) {
+        return Success(resp.data);
+      } else {
+        return NimapFailure(resp.message);
+      }
+    } else {
+      return NimapFailure('Error: ${response.data}');
     }
   }
 
@@ -240,14 +271,14 @@ class UnifiedHttpClient {
         return res as Failure;
       }
       debugPrint("api call was on  : ${(res as http.Response).request?.url}");
-      return mapHttpResponseToResult(res);
+      return mapNimapHttpResponseToResult(res);
     } else {
       final res = await PackageDio.dioGet(urlPath: endpoint, headers: headers, queryPara: queryPara);
 
       if (res.runtimeType == Failure) {
         return res as Failure;
       }
-      return mapDioResponseToResult(res);
+      return mapNimapDioResponseToResult(res);
     }
   }
 
@@ -266,14 +297,14 @@ class UnifiedHttpClient {
       if (res.runtimeType == Failure) {
         return res as Failure;
       }
-      return mapHttpResponseToResult(res);
+      return mapNimapHttpResponseToResult(res);
     } else {
       final res = await PackageDio.dioPost(urlPath: endpoint, headers: headers, queryPara: queryPara);
       debugPrint("response in post request :$res");
       if (res.runtimeType == Failure) {
         return res as Failure;
       }
-      return mapDioResponseToResult(res);
+      return mapNimapDioResponseToResult(res);
     }
   }
 
@@ -292,14 +323,14 @@ class UnifiedHttpClient {
       if (res.runtimeType == Failure) {
         return res as Failure;
       }
-      return mapHttpResponseToResult(res);
+      return mapNimapHttpResponseToResult(res);
     } else {
       final res = await PackageDio.dioDelete(urlPath: endpoint, headers: headers, queryPara: queryPara);
       debugPrint("response in post request :$res");
       if (res.runtimeType == Failure) {
         return res as Failure;
       }
-      return mapDioResponseToResult(res);
+      return mapNimapDioResponseToResult(res);
     }
   }
 
@@ -342,7 +373,7 @@ class UnifiedHttpClient {
       if (res.runtimeType == Failure) {
         return res as Failure;
       }
-      return mapHttpResponseToResult(res);
+      return mapNimapHttpResponseToResult(res);
     } else {
       final res = await PackageDio.dioMultipart(
         urlPath: endpoint,
@@ -355,7 +386,7 @@ class UnifiedHttpClient {
       if (res.runtimeType == Failure) {
         return res as Failure;
       }
-      return mapDioResponseToResult(res);
+      return mapNimapDioResponseToResult(res);
     }
   }
 }

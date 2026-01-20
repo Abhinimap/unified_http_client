@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:unified_http_client/error_handeler.dart';
 import 'package:unified_http_client/result.dart';
+import 'package:unified_http_client/unified_http_client_service.dart';
 import 'package:unified_http_client/unified_interceptor.dart';
 
 /// This will be used for HTTP Api requests
@@ -57,9 +57,8 @@ class PackageHttp {
       final targetUrl = prepared.uri;
 
       debugPrint('requesting on  :$targetUrl');
-      final response = _client != null
-          ? await _client!.get(targetUrl, headers: prepared.headers)
-          : await http.get(targetUrl, headers: prepared.headers);
+      final response =
+          _client != null ? await _client!.get(targetUrl, headers: prepared.headers) : await http.get(targetUrl, headers: prepared.headers);
 
       await UnifiedInterceptorRunner.runOnResponse(
         UnifiedResponse(

@@ -1,4 +1,4 @@
-import 'package:unified_http_client/error_handeler.dart';
+import 'package:unified_http_client/unified_http_client_service.dart';
 
 /// Result class is a Super class of Success and Failure class
 sealed class Result<R> {
@@ -22,6 +22,16 @@ class Failure<E extends ErrorResponse> extends Result<Never> {
 
   /// constructor
   const Failure(this.error);
+}
+
+/// Inherited from Result class
+/// This class represent Failed response from the API request
+/// For Nimap comp
+class NimapFailure extends Result<Never> {
+  final String message;
+
+  /// constructor
+  const NimapFailure(this.message);
 }
 
 /// contains details information about Failure of API Request
