@@ -8,7 +8,11 @@ class UnifiedRequest {
     required this.uri,
     Map<String, String>? headers,
     this.body,
-  }) : headers = headers ?? <String, String>{};
+  }) : headers = headers ??
+            <String, String>{
+              'Content-Type': 'application/json',
+              'accept': 'text/plain',
+            };
 
   final String method;
   Uri uri;
@@ -141,4 +145,3 @@ class UnifiedInterceptorRunner {
     return current;
   }
 }
-
