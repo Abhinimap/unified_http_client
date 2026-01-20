@@ -16,13 +16,13 @@ class Success<R> extends Result<R> {
 
 /// Inherited from Result class
 /// This class represent Failed response from the API request
-class Failure<E extends ErrorResponse> extends Result<Never> {
-  /// Contains information about Failure of the APi request
-  final ErrorResponse error;
+// class Failure<E extends ErrorResponse> extends Result<Never> {
+//   /// Contains information about Failure of the APi request
+//   final ErrorResponse error;
 
-  /// constructor
-  const Failure(this.error);
-}
+//   /// constructor
+//   const Failure(this.error);
+// }
 
 /// Inherited from Result class
 /// This class represent Failed response from the API request
