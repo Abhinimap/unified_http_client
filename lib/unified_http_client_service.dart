@@ -44,8 +44,8 @@ class UnifiedHttpClient {
     bool? persistentConnection,
   }) {
     useHttp = usehttp ?? true;
-    showSnackbar = showSnackbar ?? true;
-    showLogs = showLogs ?? false;
+    UnifiedHttpClient.showSnackbar = showSnackbar ?? true;
+    UnifiedHttpClient.showLogs = showLogs ?? false;
     _interceptors = <UnifiedInterceptor>[
       ApiInterceptor(showLogs: UnifiedHttpClient.showLogs),
       ...?interceptors,
