@@ -122,31 +122,39 @@ class UnifiedHttpClient {
     }
   }
 
+  static NimapBaseModel _getNimapModelFromResponse(responseBody) {
+    if (responseBody is String) {
+      return NimapBaseModel.fromJson(jsonDecode(responseBody));
+    } else if (responseBody is Map<String, dynamic>) {
+      return NimapBaseModel.fromJson(responseBody);
+    } else {
+      return NimapBaseModel.fromJson({});
+    }
+  }
+
   /// map response into Result
   static Result mapNimapHttpResponseToResult(http.Response response) {
-    if (response.statusCode == 200) {
-      final resp = NimapBaseModel.fromJson(jsonDecode(response.body));
-      if (resp.status == 200) {
-        return Success(resp.data);
-      } else {
-        return NimapFailure(resp.message);
-      }
+    final resp = _getNimapModelFromResponse(response.body);
+    if (resp.status == 200) {
+      return Success(resp.data);
     } else {
-      return NimapFailure('Error: ${response.body}');
+      if (resp.isEmpty()) {
+        return NimapFailure('Something went wrong with status code : ${response.statusCode}');
+      }
+      return NimapFailure(resp.message);
     }
   }
 
   /// map Dio response into Result
   static Result mapNimapDioResponseToResult(response) {
-    if (response.statusCode == 200) {
-      final resp = NimapBaseModel.fromJson(response.data);
-      if (resp.status == 200) {
-        return Success(resp.data);
-      } else {
-        return NimapFailure(resp.message);
-      }
+    final resp = _getNimapModelFromResponse(response.data);
+    if (resp.status == 200) {
+      return Success(resp.data);
     } else {
-      return NimapFailure('Error: ${response.data}');
+      if (resp.isEmpty()) {
+        return NimapFailure('Something went wrong with status code : ${response.statusCode}');
+      }
+      return NimapFailure(resp.message);
     }
   }
 

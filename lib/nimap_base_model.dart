@@ -10,9 +10,13 @@ class NimapBaseModel {
 
   factory NimapBaseModel.fromJson(Map<String, dynamic> json) {
     return NimapBaseModel(
-      status: json['status'],
-      message: json['error'],
+      status: json['status'] ?? 0,
+      message: json['error'] ?? '',
       data: json['data'],
     );
+  }
+
+  bool isEmpty() {
+    return status == 0 && message.isEmpty && data == null;
   }
 }
