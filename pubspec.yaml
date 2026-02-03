@@ -1,6 +1,6 @@
 name: unified_http_client
 description: "A Flutter Package to provide smooth Api call with All Error and Exception handeled."
-version: 0.0.4
+version: 0.0.5
 homepage: https://github.com/Abhinimap/unified_http_client/tree/main
 repository: https://github.com/Abhinimap/unified_http_client
 
