@@ -33,11 +33,38 @@ class PackageHttp {
 
   /// it will create uri from given endpoint with including baseurl
   /// baseurl can be setup by calling setup function
-  static Uri getUriFromEndpoints({required String endpoint, Map<String, dynamic>? queryParams, bool usePrefix = false, List<String>? pathSeg}) {
+  static Uri getUriFromEndpoints({
+    required String endpoint,
+    Map<String, dynamic>? queryParams,
+    bool usePrefix = false,
+    List<String>? pathSeg,
+  }) {
+    String? host = _host?.trim();
+
+    // If host contains scheme, parse it
+    String scheme = 'https';
+    if (host != null && (host.startsWith('http://') || host.startsWith('https://'))) {
+      final parsed = Uri.parse(host);
+      scheme = parsed.scheme;
+      host = parsed.host;
+    }
+
+    final segments = <String>[];
+
+    if (usePrefix && _prefix != null && _prefix!.isNotEmpty) {
+      segments.addAll(_prefix!.split('/').where((e) => e.isNotEmpty));
+    }
+
+    segments.addAll(endpoint.split('/').where((e) => e.isNotEmpty));
+
+    if (pathSeg != null && pathSeg.isNotEmpty) {
+      segments.addAll(pathSeg);
+    }
+
     return Uri(
-      scheme: 'https',
-      host: _host,
-      path: '${usePrefix ? _prefix : ''}$endpoint${pathSeg == null ? '' : pathSeg.join('/')}',
+      scheme: scheme,
+      host: host,
+      pathSegments: segments,
       queryParameters: queryParams,
     );
   }
