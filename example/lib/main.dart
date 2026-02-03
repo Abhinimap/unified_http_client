@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:unified_http_client/error_handeler.dart';
 import 'package:unified_http_client/internet_checker.dart';
-import 'package:unified_http_client/result.dart';
 import 'package:unified_http_client/snackbar.dart';
 import 'package:unified_http_client/unified_interceptor.dart';
 
