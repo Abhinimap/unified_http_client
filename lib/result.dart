@@ -16,22 +16,13 @@ class Success<R> extends Result<R> {
 
 /// Inherited from Result class
 /// This class represent Failed response from the API request
-class Failure<E extends ErrorResponse> extends Result<Never> {
-  /// Contains information about Failure of the APi request
-  final ErrorResponse error;
+class Failure extends Result<Never> {
+  /// check what was the reason behind api failure
+  final UnifiedHttpClientEnum unifiedHttpClientEnum;
+
+  /// error message from backend or our standard message as per status code
+  final String message;
 
   /// constructor
-  const Failure(this.error);
-}
-
-/// contains details information about Failure of API Request
-class ErrorResponse {
-  /// Enum for Error
-  UnifiedHttpClientEnum unifiedHttpClientEnum;
-
-  /// Error Response Holder
-  ErrorResponseHolder errorResponseHolder;
-
-  /// constructor
-  ErrorResponse({required this.unifiedHttpClientEnum, required this.errorResponseHolder});
+  const Failure(this.unifiedHttpClientEnum, this.message);
 }

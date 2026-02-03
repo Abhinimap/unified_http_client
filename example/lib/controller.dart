@@ -29,30 +29,20 @@ class ApiController extends GetxController {
     // await UnifiedHttpClient.post('/data/postdata', body: '');
     switch (response) {
       case Success(value: dynamic data):
-        result.value = UnifiedHttpClient.useHttp
-            ? (await json.decode(data.body)).toString()
-            : data.data.toString();
+        result.value = UnifiedHttpClient.useHttp ? (await json.decode(data.body)).toString() : data.data.toString();
         debugPrint('result  :$data');
         break;
-      case Failure(error: ErrorResponse resp):
-        debugPrint('the error occured : ${resp.unifiedHttpClientEnum.name}');
-
-        defMesg.value = resp.errorResponseHolder.defaultMessage;
-        customMesg.value = resp.errorResponseHolder.customMessage ?? '';
-        errorEnum.value = resp.unifiedHttpClientEnum.name;
-        responsebody.value = resp.errorResponseHolder.responseBody ?? '';
+      case Failure():
         // pass through enums of failure to customize uses according to failures
-        switch (resp.unifiedHttpClientEnum) {
+        switch (response.unifiedHttpClientEnum) {
           case UnifiedHttpClientEnum.badRequestError:
-            debugPrint(
-                'the status is 400 , Bad request from client side :resbody:${resp.errorResponseHolder.responseBody}\n mesg :${resp.errorResponseHolder.defaultMessage} ');
+            debugPrint('the status is 400 , Bad request from client side :${response.message} ');
             break;
           case UnifiedHttpClientEnum.notFoundError:
             debugPrint('404 , Api endpoint not found');
             break;
           default:
-            debugPrint(
-                'Not matched in main cases : ${resp.unifiedHttpClientEnum.name} ${resp.errorResponseHolder.defaultMessage}');
+            debugPrint('Not matched in main cases : ${response.message}');
         }
         break;
       default:

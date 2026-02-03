@@ -70,22 +70,16 @@ class PackageDio {
     try {
       final res = await _dio.get(urlPath, queryParameters: queryPara, options: Options(headers: headers));
       return res;
-    } on PlatformException {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.platformExceptionError,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Platform Exception Caught')));
+    } on PlatformException catch (e) {
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught :$e');
     } on SocketException catch (e) {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.socketExceptionError,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Socket Exception:$e')));
-    } on FormatException {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.formatExceptionError,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'format exception Error')));
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e) {
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception Error : $e');
+    } on DioException catch (e) {
+      return Failure(UnifiedHttpClientEnum.undefined, 'Dio Exception in multipart: ${e.message}');
     } catch (e) {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'something went Wrong : $e')));
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
   }
 
@@ -94,24 +88,16 @@ class PackageDio {
     try {
       final res = await _dio.post(urlPath, data: body, queryParameters: queryPara, options: Options(headers: headers));
       return res;
-    } on PlatformException {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.platformExceptionError,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Platform Exception Caught')));
+    } on PlatformException catch (e) {
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught :$e');
     } on SocketException catch (e) {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.socketExceptionError,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Socket Exception:$e')));
-    } on FormatException {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.formatExceptionError,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'format exception Error')));
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e) {
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception Error : $e');
     } on DioException catch (e) {
-      debugPrint('error of dioexp : ${e.type}');
+      return Failure(UnifiedHttpClientEnum.undefined, 'Dio Exception in multipart: ${e.message}');
     } catch (e) {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'something went Wrong : $e')));
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
   }
 
@@ -120,22 +106,16 @@ class PackageDio {
     try {
       final res = await _dio.delete(urlPath, queryParameters: queryPara, options: Options(headers: headers));
       return res;
-    } on PlatformException {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.platformExceptionError,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Platform Exception Caught')));
+    } on PlatformException catch (e) {
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught :$e');
     } on SocketException catch (e) {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.socketExceptionError,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Socket Exception:$e')));
-    } on FormatException {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.formatExceptionError,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'format exception Error')));
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e) {
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception Error : $e');
+    } on DioException catch (e) {
+      return Failure(UnifiedHttpClientEnum.undefined, 'Dio Exception in multipart: ${e.message}');
     } catch (e) {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'something went Wrong : $e')));
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
   }
 
@@ -201,10 +181,7 @@ class PackageDio {
               filename: filename,
             );
           } else {
-            return Failure(ErrorResponse(
-                unifiedHttpClientEnum: UnifiedHttpClientEnum.badRequestError,
-                errorResponseHolder:
-                    ErrorResponseHolder(defaultMessage: 'Invalid file data for field "$fieldName". Must provide either "path" or "bytes".')));
+            return Failure(UnifiedHttpClientEnum.badRequestError, 'Invalid file data for field "$fieldName". Must provide either "path" or "bytes".');
           }
 
           formData.files.add(MapEntry(fieldName, multipartFile));
@@ -218,27 +195,16 @@ class PackageDio {
         options: Options(headers: headers),
       );
       return res;
-    } on PlatformException {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.platformExceptionError,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Platform Exception Caught')));
+    } on PlatformException catch (e) {
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught :$e');
     } on SocketException catch (e) {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.socketExceptionError,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Socket Exception:$e')));
-    } on FormatException {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.formatExceptionError,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'format exception Error')));
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e) {
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception Error : $e');
     } on DioException catch (e) {
-      debugPrint('error of dioexp in multipart : ${e.type}');
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Dio Exception in multipart: ${e.message}')));
+      return Failure(UnifiedHttpClientEnum.undefined, 'Dio Exception in multipart: ${e.message}');
     } catch (e) {
-      return Failure(ErrorResponse(
-          unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
-          errorResponseHolder: ErrorResponseHolder(defaultMessage: 'something went Wrong : $e')));
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
   }
 }
