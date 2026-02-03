@@ -1,7 +1,6 @@
 import 'dart:convert';
 
-import 'package:unified_http_client/error_handeler.dart';
-import 'package:unified_http_client/result.dart';
+import 'package:unified_http_client/unified_http_client.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

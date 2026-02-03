@@ -1,4 +1,4 @@
-import 'package:unified_http_client/error_handeler.dart';
+import 'package:unified_http_client/unified_http_client_service.dart';
 
 /// Result class is a Super class of Success and Failure class
 sealed class Result<R> {

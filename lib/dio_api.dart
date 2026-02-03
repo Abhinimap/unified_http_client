@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
-import 'package:unified_http_client/error_handeler.dart';
+import 'package:unified_http_client/unified_http_client_service.dart';
 import 'package:unified_http_client/result.dart';
 import 'package:unified_http_client/unified_interceptor.dart';
 import 'package:unified_http_client/unified_options.dart';
