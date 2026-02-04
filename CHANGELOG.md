@@ -11,3 +11,5 @@
 - dynamic type added
 ## 0.0.6
 - fold method introduced for response
+## 0.0.7
+- updated package doc

@@ -1,143 +1,256 @@
-A Flutter Package to provide smooth Api call with All Error and Exception handeled.<br>
--  while using package's api request call you don't have to worry about any exception which might occured including PlatformException , FormatException , SocketException.<br>
-- Instead of Exception throw this package focus on returning Exxception as Custom Failure class.<br>
-- you can use Enum to find out which exception has occured and along with it you get access to default message for those Exception and response body of the api in your UI.<br>
+## unified_http_client
 
-This package also ensure proper network checking before making any APi request for making process fast and improve user experience.<br><br>
+**unified_http_client** is a Flutter/Dart package that gives you a single, simple API surface for making REST calls using either `http` or `dio` under the hood.
 
-## Android Configuration 
-On Android, for correct working in release mode, you must add INTERNET & ACCESS_NETWORK_STATE permissions to AndroidManifest.xml, follow the next lines:
-    
+- **Unified API**: call `UnifiedHttpClient.get/post/delete/multipart` and switch between `http` and `dio` with a single flag.
+- **Centralized headers**: configure common headers once in `init()`; they are automatically applied to all requests for both `http` and `dio`, with per-call overrides still possible.
+- **Unified error model**: instead of throwing, requests return a `Result<Success, Failure>` with a rich `UnifiedHttpClientEnum` error type and messages.
+- **Network checking & snackbar**: optional internet availability check with a built-in "no internet" snackbar helper.
+- **Interceptors**: plug in `UnifiedInterceptor`s once and have them applied consistently for both `http` and `dio`.
 
-```
-    <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    
-    <!-- Permissions for internet_connection_checker -->
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    
-    <application
-    
-```
+---
 
-You can call `InternetConnectionChecker().hasConnection` to get bool Status of Internet Connection Availability, kindly note that this will only return Internet Status not Internet proivder device info like wifi, mobile,etc.
+## Installation
 
+Add this to your `pubspec.yaml`:
 
-
-```
- if (!await InternetConnectionChecker().hasConnection) {
-        CustomSnackbar().showNoInternetSnackbar();
-      }     
+```yaml
+dependencies:
+  unified_http_client: ^latest
 ```
 
+Then run:
 
- You can use this to show Alert Dialog or run some code 
+```bash
+flutter pub get
+```
 
+---
 
+## Android configuration
 
- ## use of package for API Call
+On Android, for correct working in release mode, you must add `INTERNET` and `ACCESS_NETWORK_STATE` permissions to `AndroidManifest.xml`:
 
-let's setup project to use HTTP and DIO REST API call
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!-- Permissions for internet_connection_checker -->
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+  <application
+      android:name="..."
+      ... >
+  </application>
+</manifest>
+```
+
+You can use the built-in internet checker and snackbar like this:
 
 ```dart
+if (!await InternetConnectionChecker().hasConnection) {
+  CustomSnackbar().showNoInternetSnackbar();
+}
+```
 
-void main() async {
-  // set whether to use http or Dio, by default it will use HTTP
-  UnifiedHttpClient().init(usehttp: false);
+Initialize the snackbar after `MaterialApp` is built:
 
-  // setup DIO
-  PackageDio.addInterceptors([]);
-  PackageDio.setBaseOptions(
-    // you can set more option inside it
-    // but here i am setting base url to use for api calls
-      baseUrl: 'https://66c45adfb026f3cc6ceefd10.mockapi.io'
+```dart
+@override
+Widget build(BuildContext context) {
+  // Needed to show the "no internet" snackbar.
+  CustomSnackbar().init(context);
+
+  return MaterialApp(
+    home: Scaffold(
+      appBar: AppBar(title: const Text('Unified HTTP Client')),
+      body: const MyHomePage(),
+    ),
   );
-  
-  // this will add base options and interceptors to dio client
-  // must be called to setup dio 
-  PackageDio.setUpDio();
+}
+```
 
+---
 
-  // setup HTTP
-  // you can define your own http client (optional)
-  PackageHttp.setupClient(client:http.Client() );
-  // necessary to pass host (base url) to make http request
-  PackageHttp.setup(host: '66c45adfb026f3cc6ceefd10.mockapi.io',prefix: '');
+## Initialization (headers + client selection)
+
+Call `UnifiedHttpClient().init()` once, early in your app (e.g. in `main()`), to configure:
+
+- whether to use `http` or `dio`
+- base URL and timeouts (for `dio`)
+- global headers (used by **both** `http` and `dio`)
+- interceptors and logging
+
+```dart
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  UnifiedHttpClient().init(
+    usehttp: false, // false => use dio, true => use http (default is true)
+    baseUrl: 'https://66c45adfb026f3cc6ceefd10.mockapi.io',
+    showLogs: true,
+    // headers configured here are applied to ALL requests by default
+    headers: {
+      'Authorization': 'Bearer <token>',
+      'X-App-Version': '1.0.0',
+    },
+    interceptors: [
+      ApiInterceptor(
+        // Example: override headers or log extra info
+        onRequestOverride: (req) {
+          req.headers['X-Demo-Header'] = 'demo';
+          return req;
+        },
+      ),
+    ],
+  );
 
   runApp(const MyApp());
 }
-
 ```
 
-Initialize Snackbar after MaterialApp is configured.
+> **Note:** You no longer need to call `PackageDio.setBaseOptions` / `setUpDio()` or `PackageHttp.setup()` directly in your app. The `init()` method wires everything up for you.
 
- ```
-  @override
-  Widget build(BuildContext context) {
-    
-    // Make sure to call init function before using api call from UnifiedHttpClient class
-    // context is needed to show No internet Snackbar,
-    // Otherwise Snackbar will not appear when device is not connected to internet and api request is made
-    CustomSnackbar().init(context);
+---
 
-    return Scaffold(
-      appBar: AppBar(
-```
+## Making API calls
 
-Calling APi using UnifiedHttpClient class
-use `UnifiedHttpClient().get(url)` to make GET request call
-and get response as Result class, use Switch statement to iterate through Success or Failure
+Use the static helpers from `UnifiedHttpClient` anywhere in your code.  
+All methods return a `Result<String>` which will be either `Success` or `Failure`.
 
-Below is sample code for how the request are made and how response are manipulated
+### GET
 
 ```dart
+final result = await UnifiedHttpClient.get(
+  '/data/postdata',
+  // optional per-call headers (merged with init headers, override by key)
+  headers: {
+    'X-Request-Id': '123',
+  },
+  queryPara: {
+    'page': 1,
+  },
+);
 
-  Future<void> callApi() async {
-    clear();
-    final Result response = await UnifiedHttpClient.get(
-      '/data/postdata',
-    );
-    // await UnifiedHttpClient.post('/data/postdata', body: '');
-    switch (response) {
-      case Success(value: dynamic data):
+result.fold(
+  (failure) {
+    debugPrint('GET failed: ${failure.unifiedHttpClientEnum} - ${failure.message}');
+  },
+  (body) {
+    debugPrint('GET body: $body');
+  },
+);
+```
 
-        result.value = UnifiedHttpClient.useHttp
-            ? (await json.decode(data.body)).toString()
-            : data.data.toString();
-        debugPrint('result  :$data');
+### POST
+
+```dart
+final result = await UnifiedHttpClient.post(
+  '/data/postdata',
+  body: {
+    'name': 'John',
+    'age': 30,
+  },
+  headers: {
+    // overrides/extends init headers for this call only
+    'X-Request-Id': '456',
+  },
+);
+
+result.fold(
+  (failure) {
+    // handle error
+  },
+  (body) {
+    // handle success
+  },
+);
+```
+
+### DELETE
+
+```dart
+final result = await UnifiedHttpClient.delete(
+  '/data/postdata/1',
+);
+```
+
+### Multipart (file upload)
+
+```dart
+final result = await UnifiedHttpClient.multipart(
+  '/upload',
+  files: {
+    'image': {
+      'path': '/path/to/image.jpg',
+      'filename': 'image.jpg',
+    },
+  },
+  fields: {
+    'title': 'My Image',
+    'description': 'Image description',
+  },
+);
+```
+
+---
+
+## Header behavior (important)
+
+- **Init-level headers** (`init(headers: ...)`):
+  - Stored once and automatically applied to **every** request (for both `http` and `dio`).
+  - Example: global `Authorization` token, `Accept-Language`, app version, etc.
+
+- **Per-call headers** (e.g. `get(..., headers: {...})`):
+  - Optional and still supported.
+  - These are **merged** with init headers; when a key exists in both, the per-call value wins.
+  - This works consistently for `get`, `post`, `delete`, and `multipart`.
+
+This lets you configure your main headers once, while still having the flexibility to tweak/override them for individual calls.
+
+---
+
+## Error handling
+
+All helpers (`get/post/delete/multipart`) return a `Result<String>`:
+
+- **Success**: wraps the response body as a `String`.
+- **Failure**: wraps:
+  - a `UnifiedHttpClientEnum` describing the error category (e.g. `badRequestError`, `internalServerError`, `noInternetError`, etc.),
+  - a default message,
+  - and (where applicable) the raw response body from the server.
+
+You can pattern-match on the enum to customize your UI and flows:
+
+```dart
+result.fold(
+  (failure) {
+    switch (failure.unifiedHttpClientEnum) {
+      case UnifiedHttpClientEnum.badRequestError:
+        // 400
         break;
-      case Failure(error: ErrorResponse resp):
-        debugPrint('the error occured : ${resp.UnifiedHttpClientEnum.name}');
-
-        // Holds message regarding error
-        defMesg.value = resp.errorResponseHolder.defaultMessage;
-        customMesg.value = resp.errorResponseHolder.customMessage ?? '';
-        
-        // give error type 
-        // such as badrequest , InternalServerError,etc..
-        errorEnum.value = resp.UnifiedHttpClientEnum.name;
-        
-        // if error caught by package such as statusCode >300 
-        // response body of that request is stored here
-        responsebody.value = resp.errorResponseHolder.responseBody ?? '';
-        
-        // pass through enums of failure to customize uses according to failures
-        switch (resp.UnifiedHttpClientEnum) {
-          case UnifiedHttpClientEnum.badRequestError:
-            debugPrint(
-                'the status is 400 , Bad request from client side :resbody:${resp.errorResponseHolder.responseBody}\n mesg :${resp.errorResponseHolder.defaultMessage} ');
-            break;
-          case UnifiedHttpClientEnum.notFoundError:
-            debugPrint('404 , Api endpoint not found');
-            break;
-          default:
-            debugPrint(
-                'Not matched in main cases : ${resp.UnifiedHttpClientEnum.name} ${resp.errorResponseHolder.defaultMessage}');
-        }
+      case UnifiedHttpClientEnum.notFoundError:
+        // 404
         break;
       default:
-        debugPrint('Api Response not matched with any cases ');
+        // generic handling
     }
-  }
-```# unified_http_client
-# unified_http_client
+  },
+  (body) {
+    // handle success
+  },
+);
+```
+
+---
+
+## Example app
+
+See the `example` folder (and its `README.md`) for a minimal working Flutter app that demonstrates:
+
+- initializing the client once in `main.dart`
+- switching between `http` and `dio`
+- configuring headers globally and per-call
+- using interceptors and logging
+- handling `Success` / `Failure` results in the UI
+

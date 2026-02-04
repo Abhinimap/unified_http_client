@@ -25,6 +25,12 @@ class UnifiedHttpClient {
   static bool showLogs = false;
   static List<UnifiedInterceptor> _interceptors = <UnifiedInterceptor>[];
 
+  /// default headers configured via [init] and merged
+  /// into every request for both http and dio.
+  /// Per-call headers passed to get/post/delete/multipart
+  /// will override these defaults on a key-by-key basis.
+  static Map<String, String> defaultHeaders = <String, String>{};
+
   /// by default it will use http and show snackbar
   void init({
     bool? usehttp,
@@ -51,6 +57,14 @@ class UnifiedHttpClient {
       ApiInterceptor(showLogs: UnifiedHttpClient.showLogs),
       ...?interceptors,
     ];
+
+    // Normalize and store default headers (shared by http & dio).
+    // Values are converted to String to satisfy both clients.
+    UnifiedHttpClient.defaultHeaders = {
+      if (headers != null)
+        for (final entry in headers.entries)
+          if (entry.value != null) entry.key: entry.value.toString(),
+    };
 
     // DIO Setup
     if (!useHttp) {
@@ -157,10 +171,17 @@ class UnifiedHttpClient {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
     }
+
+    // Merge headers: init-level defaults + per-call overrides.
+    final mergedHeaders = <String, String>{
+      ...defaultHeaders,
+      if (headers != null) ...headers,
+    };
+
     if (useHttp) {
       final res = await PackageHttp.getRequest(
         url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
-        headers: headers,
+        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
       );
 
       if (res.runtimeType == Failure) {
@@ -169,7 +190,11 @@ class UnifiedHttpClient {
       debugPrint("api call was on  : ${(res as http.Response).request?.url}");
       return mapHttpResponseToResult(res);
     } else {
-      final res = await PackageDio.dioGet(urlPath: endpoint, headers: headers, queryPara: queryPara);
+      final res = await PackageDio.dioGet(
+        urlPath: endpoint,
+        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
+        queryPara: queryPara,
+      );
 
       if (res.runtimeType == Failure) {
         return res as Failure;
@@ -184,10 +209,17 @@ class UnifiedHttpClient {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
     }
+
+    // Merge headers: init-level defaults + per-call overrides.
+    final mergedHeaders = <String, String>{
+      ...defaultHeaders,
+      if (headers != null) ...headers,
+    };
+
     if (useHttp) {
       final res = await PackageHttp.postRequest(
         url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
-        headers: headers,
+        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
         body: body,
       );
 
@@ -196,7 +228,11 @@ class UnifiedHttpClient {
       }
       return mapHttpResponseToResult(res);
     } else {
-      final res = await PackageDio.dioPost(urlPath: endpoint, headers: headers, queryPara: queryPara);
+      final res = await PackageDio.dioPost(
+        urlPath: endpoint,
+        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
+        queryPara: queryPara,
+      );
       debugPrint("response in post request :$res");
       if (res.runtimeType == Failure) {
         return res as Failure;
@@ -211,10 +247,17 @@ class UnifiedHttpClient {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
     }
+
+    // Merge headers: init-level defaults + per-call overrides.
+    final mergedHeaders = <String, String>{
+      ...defaultHeaders,
+      if (headers != null) ...headers,
+    };
+
     if (useHttp) {
       final res = await PackageHttp.deleteRequest(
         url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
-        headers: headers,
+        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
       );
 
       if (res.runtimeType == Failure) {
@@ -222,7 +265,11 @@ class UnifiedHttpClient {
       }
       return mapHttpResponseToResult(res);
     } else {
-      final res = await PackageDio.dioDelete(urlPath: endpoint, headers: headers, queryPara: queryPara);
+      final res = await PackageDio.dioDelete(
+        urlPath: endpoint,
+        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
+        queryPara: queryPara,
+      );
       debugPrint("response in post request :$res");
       if (res.runtimeType == Failure) {
         return res as Failure;
@@ -259,10 +306,17 @@ class UnifiedHttpClient {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
     }
+
+    // Merge headers: init-level defaults + per-call overrides.
+    final mergedHeaders = <String, String>{
+      ...defaultHeaders,
+      if (headers != null) ...headers,
+    };
+
     if (useHttp) {
       final res = await PackageHttp.multipartRequest(
         url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
-        headers: headers,
+        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
         files: files,
         fields: fields,
       );
@@ -274,7 +328,7 @@ class UnifiedHttpClient {
     } else {
       final res = await PackageDio.dioMultipart(
         urlPath: endpoint,
-        headers: headers,
+        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
         queryPara: queryPara,
         files: files,
         fields: fields,
