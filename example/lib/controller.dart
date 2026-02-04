@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:unified_http_client/unified_http_client.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:unified_http_client/unified_http_client_service.dart';
 
 class ApiController extends GetxController {
   var responsebody = ''.obs;
