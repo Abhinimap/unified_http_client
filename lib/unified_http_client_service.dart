@@ -20,6 +20,8 @@ class UnifiedHttpClient {
 
   /// default set to True
   static bool showSnackbar = true;
+
+  /// enable console logs
   static bool showLogs = false;
   static List<UnifiedInterceptor> _interceptors = <UnifiedInterceptor>[];
 
@@ -42,10 +44,10 @@ class UnifiedHttpClient {
     int? maxRedirects,
     bool? persistentConnection,
   }) {
-    useHttp = usehttp ?? true;
-    showSnackbar = showSnackbar ?? true;
-    showLogs = showLogs ?? false;
-    _interceptors = <UnifiedInterceptor>[
+    UnifiedHttpClient.useHttp = usehttp ?? true;
+    UnifiedHttpClient.showSnackbar = showSnackbar ?? true;
+    UnifiedHttpClient.showLogs = showLogs ?? false;
+    UnifiedHttpClient._interceptors = <UnifiedInterceptor>[
       ApiInterceptor(showLogs: UnifiedHttpClient.showLogs),
       ...?interceptors,
     ];
