@@ -3,6 +3,10 @@ import 'package:unified_http_client/unified_http_client_service.dart';
 /// Result class is a Super class of Success and Failure class
 sealed class Result<R> {
   const Result();
+  T fold<T>(
+    T Function(Failure failure) onFailure,
+    T Function(R value) onSuccess,
+  );
 }
 
 /// Inherit Result class and contains Successfull response of API Reuest
@@ -12,36 +16,33 @@ class Success<R> extends Result<R> {
 
   ///constructor
   const Success(this.value);
+
+  @override
+  T fold<T>(
+    T Function(Failure failure) onFailure,
+    T Function(R value) onSuccess,
+  ) {
+    return onSuccess(value);
+  }
 }
 
 /// Inherited from Result class
 /// This class represent Failed response from the API request
-// class Failure<E extends ErrorResponse> extends Result<Never> {
-//   /// Contains information about Failure of the APi request
-//   final ErrorResponse error;
+class Failure extends Result<Never> {
+  /// check what was the reason behind api failure
+  final UnifiedHttpClientEnum unifiedHttpClientEnum;
 
-//   /// constructor
-//   const Failure(this.error);
-// }
-
-/// Inherited from Result class
-/// This class represent Failed response from the API request
-/// For Nimap comp
-class NimapFailure extends Result<Never> {
+  /// error message from backend or our standard message as per status code
   final String message;
 
   /// constructor
-  const NimapFailure(this.message);
-}
+  const Failure(this.unifiedHttpClientEnum, this.message);
 
-/// contains details information about Failure of API Request
-class ErrorResponse {
-  /// Enum for Error
-  UnifiedHttpClientEnum unifiedHttpClientEnum;
-
-  /// Error Response Holder
-  ErrorResponseHolder errorResponseHolder;
-
-  /// constructor
-  ErrorResponse({required this.unifiedHttpClientEnum, required this.errorResponseHolder});
+  @override
+  T fold<T>(
+    T Function(Failure failure) onFailure,
+    T Function(Never value) onSuccess,
+  ) {
+    return onFailure(this);
+  }
 }

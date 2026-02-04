@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:unified_http_client/unified_http_client_service.dart';
 import 'package:unified_http_client/result.dart';
 import 'package:unified_http_client/unified_http_client_service.dart';
 import 'package:unified_http_client/unified_interceptor.dart';
@@ -97,14 +98,38 @@ class PackageHttp {
         _interceptors,
       );
       return response;
-    } on PlatformException {
-      return const NimapFailure('Platform Exception Caught');
-    } on SocketException catch (e) {
-      return NimapFailure('Socket Exception:$e');
-    } on FormatException {
-      return const NimapFailure('format exception Error');
-    } catch (e) {
-      return NimapFailure('something went Wrong : $e');
+    } on PlatformException catch (e, st) {
+      await _notifyError(e, st,
+          request: UnifiedRequest(
+            method: 'POST',
+            uri: url,
+            headers: headers,
+          ));
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught : $e');
+    } on SocketException catch (e, st) {
+      await _notifyError(e, st,
+          request: UnifiedRequest(
+            method: 'POST',
+            uri: url,
+            headers: headers,
+          ));
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e, st) {
+      await _notifyError(e, st,
+          request: UnifiedRequest(
+            method: 'POST',
+            uri: url,
+            headers: headers,
+          ));
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception : $e');
+    } catch (e, st) {
+      await _notifyError(e, st,
+          request: UnifiedRequest(
+            method: 'POST',
+            uri: url,
+            headers: headers,
+          ));
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
   }
 
@@ -131,14 +156,18 @@ class PackageHttp {
         _interceptors,
       );
       return response;
-    } on PlatformException {
-      return const NimapFailure('Platform Exception Caught');
-    } on SocketException catch (e) {
-      return NimapFailure('Socket Exception:$e');
-    } on FormatException {
-      return const NimapFailure('format exception Error');
-    } catch (e) {
-      return NimapFailure('something went Wrong : $e');
+    } on PlatformException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught : $e');
+    } on SocketException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception : $e');
+    } catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
   }
 
@@ -164,14 +193,38 @@ class PackageHttp {
         _interceptors,
       );
       return response;
-    } on PlatformException {
-      return const NimapFailure('Platform Exception Caught');
-    } on SocketException catch (e) {
-      return NimapFailure('Socket Exception:$e');
-    } on FormatException {
-      return const NimapFailure('format exception Error');
-    } catch (e) {
-      return NimapFailure('something went Wrong : $e');
+    } on PlatformException catch (e, st) {
+      await _notifyError(e, st,
+          request: UnifiedRequest(
+            method: 'POST',
+            uri: url,
+            headers: headers,
+          ));
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught : $e');
+    } on SocketException catch (e, st) {
+      await _notifyError(e, st,
+          request: UnifiedRequest(
+            method: 'POST',
+            uri: url,
+            headers: headers,
+          ));
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e, st) {
+      await _notifyError(e, st,
+          request: UnifiedRequest(
+            method: 'POST',
+            uri: url,
+            headers: headers,
+          ));
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception : $e');
+    } catch (e, st) {
+      await _notifyError(e, st,
+          request: UnifiedRequest(
+            method: 'POST',
+            uri: url,
+            headers: headers,
+          ));
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
   }
 
@@ -197,14 +250,18 @@ class PackageHttp {
         _interceptors,
       );
       return response;
-    } on PlatformException {
-      return const NimapFailure('Platform Exception Caught');
-    } on SocketException catch (e) {
-      return NimapFailure('Socket Exception:$e');
-    } on FormatException {
-      return const NimapFailure('format exception Error');
-    } catch (e) {
-      return NimapFailure('something went Wrong : $e');
+    } on PlatformException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught : $e');
+    } on SocketException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception : $e');
+    } catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
   }
 
@@ -309,7 +366,7 @@ class PackageHttp {
               );
             }
           } else {
-            return NimapFailure('Invalid file data for field "$fieldName". Must provide either "path" or "bytes".');
+            return Failure(UnifiedHttpClientEnum.badRequestError, 'Invalid file data for field "$fieldName". Must provide either "path" or "bytes".');
           }
 
           request.files.add(multipartFile);
@@ -331,14 +388,38 @@ class PackageHttp {
         _interceptors,
       );
       return response;
-    } on PlatformException {
-      return const NimapFailure('Platform Exception Caught');
-    } on SocketException catch (e) {
-      return NimapFailure('Socket Exception:$e');
-    } on FormatException {
-      return const NimapFailure('format exception Error');
-    } catch (e) {
-      return NimapFailure('something went Wrong : $e');
+    } on PlatformException catch (e, st) {
+      await _notifyError(e, st,
+          request: UnifiedRequest(
+            method: 'POST',
+            uri: url,
+            headers: headers,
+          ));
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught : $e');
+    } on SocketException catch (e, st) {
+      await _notifyError(e, st,
+          request: UnifiedRequest(
+            method: 'POST',
+            uri: url,
+            headers: headers,
+          ));
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e, st) {
+      await _notifyError(e, st,
+          request: UnifiedRequest(
+            method: 'POST',
+            uri: url,
+            headers: headers,
+          ));
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception : $e');
+    } catch (e, st) {
+      await _notifyError(e, st,
+          request: UnifiedRequest(
+            method: 'POST',
+            uri: url,
+            headers: headers,
+          ));
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
   }
 

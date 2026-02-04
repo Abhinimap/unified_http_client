@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:unified_http_client/result.dart';
+import 'package:unified_http_client/unified_http_client.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:unified_http_client/unified_http_client_service.dart';
@@ -26,15 +26,13 @@ class ApiController extends GetxController {
     final Result response = await UnifiedHttpClient.get(
       '/data/postdata',
     );
-    // await UnifiedHttpClient.post('/data/postdata', body: '');
-    switch (response) {
-      case Success(value: dynamic data):
-        result.value = UnifiedHttpClient.useHttp ? (await json.decode(data.body)).toString() : data.data.toString();
-        debugPrint('result  :$data');
-        break;
 
-      default:
-        debugPrint('Api Response not matched with any cases ');
-    }
+    response.fold((e) {
+      debugPrint('the status is : ${e.unifiedHttpClientEnum} , message : ${e.message}');
+    }, (r) {
+      final data = r;
+      result.value = UnifiedHttpClient.useHttp ? (json.decode(data.body)).toString() : data.data.toString();
+      debugPrint('result  :$data');
+    });
   }
 }

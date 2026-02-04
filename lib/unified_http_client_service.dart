@@ -1,11 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:unified_http_client/dio_api.dart';
 import 'package:unified_http_client/http_api.dart';
 import 'package:http/http.dart' as http;
 import 'package:unified_http_client/internet_checker.dart';
-import 'package:unified_http_client/nimap_base_model.dart';
 import 'package:unified_http_client/result.dart';
 import 'package:unified_http_client/snackbar.dart';
 import 'package:unified_http_client/unified_interceptor.dart';
@@ -44,8 +41,8 @@ class UnifiedHttpClient {
     bool? persistentConnection,
   }) {
     useHttp = usehttp ?? true;
-    UnifiedHttpClient.showSnackbar = showSnackbar ?? true;
-    UnifiedHttpClient.showLogs = showLogs ?? false;
+    showSnackbar = showSnackbar ?? true;
+    showLogs = showLogs ?? false;
     _interceptors = <UnifiedInterceptor>[
       ApiInterceptor(showLogs: UnifiedHttpClient.showLogs),
       ...?interceptors,
@@ -78,191 +75,79 @@ class UnifiedHttpClient {
     }
   }
 
-  // /// map response into Result
-  // static Result mapHttpResponseToResult(http.Response response) {
-  //   if (response.statusCode >= 200 && response.statusCode < 300) {
-  //     return Success(response);
-  //   } else {
-  //     switch (response.statusCode) {
-  //       case >= 200 && < 400:
-  //         return Success(response.body);
-
-  //       case >= 400 && < 500:
-  //         return _NimapFailure400_499(response.statusCode, response);
-  //       case >= 500:
-  //         return _failure500(response.statusCode, response);
-
-  //       default:
-  //         return Failure(ErrorResponse(
-  //             unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
-  //             errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Something went wrong', responseBody: response.body)));
-  //     }
-  //   }
-  // }
-
-  // /// map Dio response into Result
-  // static Result mapDioResponseToResult(response) {
-  //   if (response.statusCode >= 200 && response.statusCode < 300) {
-  //     return Success(response);
-  //   } else {
-  //     switch (response.statusCode) {
-  //       case >= 200 && < 400:
-  //         return Success(response.data);
-
-  //       case >= 400 && < 500:
-  //         return _failure400_499(response.statusCode, response);
-  //       case >= 500:
-  //         return _failure500(response.statusCode, response);
-
-  //       default:
-  //         return Failure(ErrorResponse(
-  //             unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined,
-  //             errorResponseHolder: ErrorResponseHolder(defaultMessage: 'Something went wrong', responseBody: response.body)));
-  //     }
-  //   }
-  // }
-
-  static NimapBaseModel _getNimapModelFromResponse(responseBody) {
-    if (responseBody is String) {
-      return NimapBaseModel.fromJson(jsonDecode(responseBody));
-    } else if (responseBody is Map<String, dynamic>) {
-      return NimapBaseModel.fromJson(responseBody);
-    } else {
-      return NimapBaseModel.fromJson({});
-    }
-  }
-
   /// map response into Result
-  static Result mapNimapHttpResponseToResult(http.Response response) {
-    final resp = _getNimapModelFromResponse(response.body);
-    if (resp.status == 200) {
-      return Success(resp.data);
+  static Result mapHttpResponseToResult(http.Response response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return Success(response);
     } else {
-      if (resp.isEmpty() || resp.message.isEmpty) {
-        return NimapFailure('Something went wrong with status code : ${response.statusCode}');
+      switch (response.statusCode) {
+        case >= 200 && < 400:
+          return Success(response.body);
+
+        case >= 400 && < 500:
+          return _failure400_499(response.statusCode, response);
+        case >= 500:
+          return _failure500(response.statusCode, response);
+
+        default:
+          return const Failure(UnifiedHttpClientEnum.undefined, 'Something went wrong');
       }
-      return NimapFailure(resp.message);
     }
   }
 
   /// map Dio response into Result
-  static Result mapNimapDioResponseToResult(response) {
-    final resp = _getNimapModelFromResponse(response.data);
-    if (resp.status == 200) {
-      return Success(resp.data);
+  static Result mapDioResponseToResult(response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return Success(response);
     } else {
-      if (resp.isEmpty() || resp.message.isEmpty) {
-        return NimapFailure('Something went wrong with status code : ${response.statusCode}');
+      switch (response.statusCode) {
+        case >= 200 && < 400:
+          return Success(response.data);
+
+        case >= 400 && < 500:
+          return _failure400_499(response.statusCode, response);
+        case >= 500:
+          return _failure500(response.statusCode, response);
+
+        default:
+          return const Failure(UnifiedHttpClientEnum.undefined, 'Something went wrong');
       }
-      return NimapFailure(resp.message);
     }
   }
 
-  // static Failure _failure400_499(int s, res) {
-  //   switch (s) {
-  //     case 400:
-  //       return Failure(
-  //         ErrorResponse(
-  //             unifiedHttpClientEnum: UnifiedHttpClientEnum.badRequestError,
-  //             errorResponseHolder: ErrorResponseHolder(
-  //                 defaultMessage: 'Bad Request..',
-  //                 responseBody: res.body,
-  //                 customMessage: 'Bad Request.. ${res is http.Response ? res.body : res.data}')),
-  //       );
-  //     case 401:
-  //       return Failure(
-  //         ErrorResponse(
-  //             unifiedHttpClientEnum: UnifiedHttpClientEnum.unAuthorizationError,
-  //             errorResponseHolder: ErrorResponseHolder(
-  //                 defaultMessage: 'You are not authorized to access this resources..',
-  //                 responseBody: res.body,
-  //                 customMessage: 'Unauthorized... ${res is http.Response ? res.body : res.data}')),
-  //       );
-  //     case 403:
-  //       return Failure(
-  //         ErrorResponse(
-  //             unifiedHttpClientEnum: UnifiedHttpClientEnum.forbiddenError,
-  //             errorResponseHolder: ErrorResponseHolder(
-  //                 defaultMessage: 'You are restricted to access this resources..',
-  //                 responseBody: res.body,
-  //                 customMessage: 'Forbidden... ${res is http.Response ? res.body : res.data}')),
-  //       );
-  //     case 404:
-  //       return Failure(
-  //         ErrorResponse(
-  //             unifiedHttpClientEnum: UnifiedHttpClientEnum.notFoundError,
-  //             errorResponseHolder: ErrorResponseHolder(
-  //                 defaultMessage: 'Resource want not find at ${res.request?.url}..',
-  //                 responseBody: res.body,
-  //                 customMessage: '404 Not Found... ${res is http.Response ? res.body : res.data}')),
-  //       );
-  //     case 409:
-  //       return Failure(
-  //         ErrorResponse(
-  //             unifiedHttpClientEnum: UnifiedHttpClientEnum.conflictError,
-  //             errorResponseHolder: ErrorResponseHolder(
-  //                 defaultMessage: 'data Conflicted', responseBody: res.body, customMessage: '409... ${res is http.Response ? res.body : res.data}')),
-  //       );
-  //     default:
-  //       return Failure(ErrorResponse(
-  //           errorResponseHolder: ErrorResponseHolder(
-  //             defaultMessage: 'Something went wrong',
-  //             customMessage: 'Error : ${res.body}',
-  //             responseBody: res.body,
-  //           ),
-  //           unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined));
-  //   }
-  // }
+  static Failure _failure400_499(int s, res) {
+    switch (s) {
+      case 400:
+        return Failure(UnifiedHttpClientEnum.badRequestError, 'Bad Request.. ${res is http.Response ? res.body : res.data}');
 
-  // static Failure _failure500(int s, res) {
-  //   switch (s) {
-  //     case 500:
-  //       return Failure(
-  //         ErrorResponse(
-  //             unifiedHttpClientEnum: UnifiedHttpClientEnum.internalServerError,
-  //             errorResponseHolder: ErrorResponseHolder(
-  //                 defaultMessage: 'Internal Server Error..',
-  //                 responseBody: res.body,
-  //                 customMessage: 'Internal Server Error.. ${res is http.Response ? res.body : res.data}')),
-  //       );
-  //     case 501:
-  //       return Failure(
-  //         ErrorResponse(
-  //             unifiedHttpClientEnum: UnifiedHttpClientEnum.serverNotSupportError,
-  //             errorResponseHolder: ErrorResponseHolder(
-  //                 defaultMessage: 'Server does not support this functionality',
-  //                 responseBody: res.body,
-  //                 customMessage: 'server not supported... ${res is http.Response ? res.body : res.data}')),
-  //       );
-  //     case 503:
-  //       return Failure(
-  //         ErrorResponse(
-  //             unifiedHttpClientEnum: UnifiedHttpClientEnum.serverUnavailableError,
-  //             errorResponseHolder: ErrorResponseHolder(
-  //                 responseBody: res.body,
-  //                 defaultMessage: 'Server Not Available..',
-  //                 customMessage: 'Server Not available... ${res is http.Response ? res.body : res.data}')),
-  //       );
-  //     case 504:
-  //       return Failure(
-  //         ErrorResponse(
-  //             unifiedHttpClientEnum: UnifiedHttpClientEnum.serverGatewayTimeOut,
-  //             errorResponseHolder: ErrorResponseHolder(
-  //                 defaultMessage: 'server time out on ${res.request?.url}..',
-  //                 responseBody: res.body,
-  //                 customMessage: 'server request time out.. ${res is http.Response ? res.body : res.data}')),
-  //       );
+      case 401:
+        return Failure(UnifiedHttpClientEnum.unAuthorizationError, 'Unauthorized... ${res is http.Response ? res.body : res.data}');
+      case 403:
+        return Failure(UnifiedHttpClientEnum.forbiddenError, 'Forbidden... ${res is http.Response ? res.body : res.data}');
+      case 404:
+        return Failure(UnifiedHttpClientEnum.notFoundError, '404 Not Found... ${res is http.Response ? res.body : res.data}');
+      case 409:
+        return Failure(UnifiedHttpClientEnum.conflictError, '409... ${res is http.Response ? res.body : res.data}');
+      default:
+        return const Failure(UnifiedHttpClientEnum.undefined, 'something went wrong...');
+    }
+  }
 
-  //     default:
-  //       return Failure(ErrorResponse(
-  //           errorResponseHolder: ErrorResponseHolder(
-  //             defaultMessage: 'Something went wrong',
-  //             customMessage: 'Error on ${res.request?.url}',
-  //             responseBody: res.body,
-  //           ),
-  //           unifiedHttpClientEnum: UnifiedHttpClientEnum.undefined));
-  //   }
-  // }
+  static Failure _failure500(int s, res) {
+    switch (s) {
+      case 500:
+        return Failure(UnifiedHttpClientEnum.internalServerError, 'Internal Server Error.. ${res is http.Response ? res.body : res.data}');
+      case 501:
+        return Failure(UnifiedHttpClientEnum.serverNotSupportError, 'server not supported... ${res is http.Response ? res.body : res.data}');
+      case 503:
+        return Failure(UnifiedHttpClientEnum.serverUnavailableError, 'Server Not available... ${res is http.Response ? res.body : res.data}');
+      case 504:
+        return Failure(UnifiedHttpClientEnum.serverGatewayTimeOut, 'server request time out.. ${res is http.Response ? res.body : res.data}');
+
+      default:
+        return const Failure(UnifiedHttpClientEnum.undefined, 'something went wrong...');
+    }
+  }
 
   /// get request
   static Future<Result> get(String endpoint, {int timeout = 3, Map<String, dynamic>? queryPara, Map<String, String>? headers}) async {
@@ -275,18 +160,18 @@ class UnifiedHttpClient {
         headers: headers,
       );
 
-      if (res.runtimeType == NimapFailure) {
-        return res as NimapFailure;
+      if (res.runtimeType == Failure) {
+        return res as Failure;
       }
       debugPrint("api call was on  : ${(res as http.Response).request?.url}");
-      return mapNimapHttpResponseToResult(res);
+      return mapHttpResponseToResult(res);
     } else {
       final res = await PackageDio.dioGet(urlPath: endpoint, headers: headers, queryPara: queryPara);
 
-      if (res.runtimeType == NimapFailure) {
-        return res as NimapFailure;
+      if (res.runtimeType == Failure) {
+        return res as Failure;
       }
-      return mapNimapDioResponseToResult(res);
+      return mapDioResponseToResult(res);
     }
   }
 
@@ -302,17 +187,17 @@ class UnifiedHttpClient {
         body: body,
       );
 
-      if (res.runtimeType == NimapFailure) {
-        return res as NimapFailure;
+      if (res.runtimeType == Failure) {
+        return res as Failure;
       }
-      return mapNimapHttpResponseToResult(res);
+      return mapHttpResponseToResult(res);
     } else {
       final res = await PackageDio.dioPost(urlPath: endpoint, headers: headers, queryPara: queryPara);
       debugPrint("response in post request :$res");
-      if (res.runtimeType == NimapFailure) {
-        return res as NimapFailure;
+      if (res.runtimeType == Failure) {
+        return res as Failure;
       }
-      return mapNimapDioResponseToResult(res);
+      return mapDioResponseToResult(res);
     }
   }
 
@@ -328,17 +213,17 @@ class UnifiedHttpClient {
         headers: headers,
       );
 
-      if (res.runtimeType == NimapFailure) {
-        return res as NimapFailure;
+      if (res.runtimeType == Failure) {
+        return res as Failure;
       }
-      return mapNimapHttpResponseToResult(res);
+      return mapHttpResponseToResult(res);
     } else {
       final res = await PackageDio.dioDelete(urlPath: endpoint, headers: headers, queryPara: queryPara);
       debugPrint("response in post request :$res");
-      if (res.runtimeType == NimapFailure) {
-        return res as NimapFailure;
+      if (res.runtimeType == Failure) {
+        return res as Failure;
       }
-      return mapNimapDioResponseToResult(res);
+      return mapDioResponseToResult(res);
     }
   }
 
@@ -378,10 +263,10 @@ class UnifiedHttpClient {
         fields: fields,
       );
 
-      if (res.runtimeType == NimapFailure) {
-        return res as NimapFailure;
+      if (res.runtimeType == Failure) {
+        return res as Failure;
       }
-      return mapNimapHttpResponseToResult(res);
+      return mapHttpResponseToResult(res);
     } else {
       final res = await PackageDio.dioMultipart(
         urlPath: endpoint,
@@ -391,10 +276,10 @@ class UnifiedHttpClient {
         fields: fields,
       );
 
-      if (res.runtimeType == NimapFailure) {
-        return res as NimapFailure;
+      if (res.runtimeType == Failure) {
+        return res as Failure;
       }
-      return mapNimapDioResponseToResult(res);
+      return mapDioResponseToResult(res);
     }
   }
 }

@@ -1,9 +1,8 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:unified_http_client/unified_http_client.dart';
+import 'package:unified_http_client/unified_http_client_service.dart';
 import 'package:unified_http_client/result.dart';
 import 'package:unified_http_client/unified_interceptor.dart';
 import 'package:unified_http_client/unified_options.dart';
@@ -70,14 +69,16 @@ class PackageDio {
     try {
       final res = await _dio.get(urlPath, queryParameters: queryPara, options: Options(headers: headers));
       return res;
-    } on PlatformException {
-      return const NimapFailure('Platform Exception Caught');
+    } on PlatformException catch (e) {
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught :$e');
     } on SocketException catch (e) {
-      return NimapFailure('Socket Exception:$e');
-    } on FormatException {
-      return const NimapFailure('format exception Error');
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e) {
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception Error : $e');
+    } on DioException catch (e) {
+      return Failure(UnifiedHttpClientEnum.undefined, 'Dio Exception in multipart: ${e.message}');
     } catch (e) {
-      return NimapFailure('something went Wrong : $e');
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
   }
 
@@ -86,14 +87,16 @@ class PackageDio {
     try {
       final res = await _dio.post(urlPath, data: body, queryParameters: queryPara, options: Options(headers: headers));
       return res;
-    } on PlatformException {
-      return const NimapFailure('Platform Exception Caught');
+    } on PlatformException catch (e) {
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught :$e');
     } on SocketException catch (e) {
-      return NimapFailure('Socket Exception:$e');
-    } on FormatException {
-      return const NimapFailure('format exception Error');
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e) {
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception Error : $e');
+    } on DioException catch (e) {
+      return Failure(UnifiedHttpClientEnum.undefined, 'Dio Exception in multipart: ${e.message}');
     } catch (e) {
-      return NimapFailure('something went Wrong : $e');
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
   }
 
@@ -102,14 +105,16 @@ class PackageDio {
     try {
       final res = await _dio.delete(urlPath, queryParameters: queryPara, options: Options(headers: headers));
       return res;
-    } on PlatformException {
-      return const NimapFailure('Platform Exception Caught');
+    } on PlatformException catch (e) {
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught :$e');
     } on SocketException catch (e) {
-      return NimapFailure('Socket Exception:$e');
-    } on FormatException {
-      return const NimapFailure('format exception Error');
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e) {
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception Error : $e');
+    } on DioException catch (e) {
+      return Failure(UnifiedHttpClientEnum.undefined, 'Dio Exception in multipart: ${e.message}');
     } catch (e) {
-      return NimapFailure('something went Wrong : $e');
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
   }
 
@@ -175,7 +180,7 @@ class PackageDio {
               filename: filename,
             );
           } else {
-            return NimapFailure('Invalid file data for field "$fieldName". Must provide either "path" or "bytes".');
+            return Failure(UnifiedHttpClientEnum.badRequestError, 'Invalid file data for field "$fieldName". Must provide either "path" or "bytes".');
           }
 
           formData.files.add(MapEntry(fieldName, multipartFile));
@@ -189,14 +194,16 @@ class PackageDio {
         options: Options(headers: headers),
       );
       return res;
-    } on PlatformException {
-      return const NimapFailure('Platform Exception Caught');
+    } on PlatformException catch (e) {
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught :$e');
     } on SocketException catch (e) {
-      return NimapFailure('Socket Exception:$e');
-    } on FormatException {
-      return const NimapFailure('format exception Error');
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e) {
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception Error : $e');
+    } on DioException catch (e) {
+      return Failure(UnifiedHttpClientEnum.undefined, 'Dio Exception in multipart: ${e.message}');
     } catch (e) {
-      return NimapFailure('something went Wrong : $e');
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
   }
 }

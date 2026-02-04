@@ -1,10 +1,7 @@
 import 'package:example/controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:unified_http_client/internet_checker.dart';
-import 'package:unified_http_client/result.dart';
-import 'package:unified_http_client/snackbar.dart';
-import 'package:unified_http_client/unified_http_client_service.dart';
+import 'package:unified_http_client/unified_http_client.dart';
 import 'package:unified_http_client/unified_interceptor.dart';
 
 void main() async {
@@ -54,7 +51,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool isConnected = false;
-  ErrorResponse? failure;
 
   // enter your own url to test
   // String url = 'https://mocki.io/v1/cbde42ba-5b27-4530-8fc5-2d3aa669ccbd';
