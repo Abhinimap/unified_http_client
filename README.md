@@ -208,6 +208,27 @@ final result = await UnifiedHttpClient.multipart(
 
 This lets you configure your main headers once, while still having the flexibility to tweak/override them for individual calls.
 
+You can also update global headers **later at runtime** from anywhere in your app:
+
+```dart
+// e.g. after a successful login
+result.fold(
+  (failure) {
+    // handle login error
+  },
+  (body) {
+    final token = extractTokenFrom(body);
+    UnifiedHttpClient.setDefaultHeader('Authorization', 'Bearer $token');
+  },
+);
+
+// or replace/merge multiple defaults at once
+UnifiedHttpClient.setDefaultHeaders({
+  'Authorization': 'Bearer $token',
+  'X-Session-Id': sessionId,
+});
+```
+
 ---
 
 ## Error handling

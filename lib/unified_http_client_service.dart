@@ -31,6 +31,38 @@ class UnifiedHttpClient {
   /// will override these defaults on a key-by-key basis.
   static Map<String, String> defaultHeaders = <String, String>{};
 
+  /// Replace or merge global default headers at runtime.
+  /// Useful for things like setting/changing auth tokens after login.
+  ///
+  /// If [merge] is true (default), the provided [headers] are merged into the
+  /// existing [defaultHeaders]. Existing keys are overwritten by the new ones.
+  /// If [merge] is false, the previous [defaultHeaders] are discarded.
+  static void setDefaultHeaders(Map<String, String> headers, {bool merge = true}) {
+    if (merge) {
+      defaultHeaders = {
+        ...defaultHeaders,
+        ...headers,
+      };
+    } else {
+      defaultHeaders = Map<String, String>.from(headers);
+    }
+  }
+
+  /// Convenience helper to set a single default header key/value at runtime.
+  static void setDefaultHeader(String key, String value) {
+    defaultHeaders[key] = value;
+  }
+
+  /// Remove a single default header key at runtime.
+  static void removeDefaultHeader(String key) {
+    defaultHeaders.remove(key);
+  }
+
+  /// Clear all default headers that were configured via [init] or setters.
+  static void clearDefaultHeaders() {
+    defaultHeaders.clear();
+  }
+
   /// by default it will use http and show snackbar
   void init({
     bool? usehttp,
