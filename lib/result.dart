@@ -3,6 +3,10 @@ import 'package:unified_http_client/unified_http_client_service.dart';
 /// Result class is a Super class of Success and Failure class
 sealed class Result<R> {
   const Result();
+  T fold<T>(
+    T Function(Failure failure) onFailure,
+    T Function(R value) onSuccess,
+  );
 }
 
 /// Inherit Result class and contains Successfull response of API Reuest
@@ -12,6 +16,14 @@ class Success<R> extends Result<R> {
 
   ///constructor
   const Success(this.value);
+
+  @override
+  T fold<T>(
+    T Function(Failure failure) onFailure,
+    T Function(R value) onSuccess,
+  ) {
+    return onSuccess(value);
+  }
 }
 
 /// Inherited from Result class
@@ -25,4 +37,12 @@ class Failure extends Result<Never> {
 
   /// constructor
   const Failure(this.unifiedHttpClientEnum, this.message);
+
+  @override
+  T fold<T>(
+    T Function(Failure failure) onFailure,
+    T Function(Never value) onSuccess,
+  ) {
+    return onFailure(this);
+  }
 }
