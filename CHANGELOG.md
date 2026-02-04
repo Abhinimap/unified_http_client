@@ -9,3 +9,5 @@
 - unified interceptors
 ## 0.0.4
 - dynamic type added
+## 0.0.5
+- fold method introduced for response

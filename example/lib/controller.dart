@@ -25,27 +25,13 @@ class ApiController extends GetxController {
     final Result response = await UnifiedHttpClient.get(
       '/data/postdata',
     );
-    // await UnifiedHttpClient.post('/data/postdata', body: '');
-    switch (response) {
-      case Success(value: dynamic data):
-        result.value = UnifiedHttpClient.useHttp ? (await json.decode(data.body)).toString() : data.data.toString();
-        debugPrint('result  :$data');
-        break;
-      case Failure():
-        // pass through enums of failure to customize uses according to failures
-        switch (response.unifiedHttpClientEnum) {
-          case UnifiedHttpClientEnum.badRequestError:
-            debugPrint('the status is 400 , Bad request from client side :${response.message} ');
-            break;
-          case UnifiedHttpClientEnum.notFoundError:
-            debugPrint('404 , Api endpoint not found');
-            break;
-          default:
-            debugPrint('Not matched in main cases : ${response.message}');
-        }
-        break;
-      default:
-        debugPrint('Api Response not matched with any cases ');
-    }
+
+    response.fold((e) {
+      debugPrint('the status is : ${e.unifiedHttpClientEnum} , message : ${e.message}');
+    }, (r) {
+      final data = r;
+      result.value = UnifiedHttpClient.useHttp ? (json.decode(data.body)).toString() : data.data.toString();
+      debugPrint('result  :$data');
+    });
   }
 }
