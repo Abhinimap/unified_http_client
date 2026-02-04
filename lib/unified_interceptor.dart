@@ -18,6 +18,10 @@ class UnifiedRequest {
   Uri uri;
   Map<String, String> headers;
   dynamic body;
+
+  /// Optional timestamp that can be used by interceptors
+  /// (e.g. for measuring request duration).
+  DateTime? startedAt;
 }
 
 /// Lightweight response model used by unified interceptors.

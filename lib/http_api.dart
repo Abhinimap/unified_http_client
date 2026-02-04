@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:unified_http_client/unified_http_client_service.dart';
 import 'package:unified_http_client/result.dart';
-import 'package:unified_http_client/unified_http_client_service.dart';
 import 'package:unified_http_client/unified_interceptor.dart';
 
 /// This will be used for HTTP Api requests

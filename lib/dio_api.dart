@@ -241,6 +241,10 @@ class _UnifiedDioInterceptor extends Interceptor {
         interceptors,
       );
 
+      // Persist the unified request so interceptors like NetworkLogInterceptor
+      // can access timing information later on response/error.
+      options.extra['unifiedRequest'] = unifiedRequest;
+
       options
         ..headers = unifiedRequest.headers
         ..data = unifiedRequest.body;
@@ -271,17 +275,19 @@ class _UnifiedDioInterceptor extends Interceptor {
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) async {
     try {
+      final storedRequest = response.requestOptions.extra['unifiedRequest'] as UnifiedRequest?;
       final unifiedResponse = await UnifiedInterceptorRunner.runOnResponse(
         UnifiedResponse(
           statusCode: response.statusCode,
           data: response.data,
           headers: response.headers.map,
-          request: UnifiedRequest(
-            method: response.requestOptions.method,
-            uri: response.requestOptions.uri,
-            headers: response.requestOptions.headers.map((k, v) => MapEntry(k, v.toString())),
-            body: response.requestOptions.data,
-          ),
+          request: storedRequest ??
+              UnifiedRequest(
+                method: response.requestOptions.method,
+                uri: response.requestOptions.uri,
+                headers: response.requestOptions.headers.map((k, v) => MapEntry(k, v.toString())),
+                body: response.requestOptions.data,
+              ),
         ),
         interceptors,
       );
@@ -300,12 +306,14 @@ class _UnifiedDioInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    final request = UnifiedRequest(
-      method: err.requestOptions.method,
-      uri: err.requestOptions.uri,
-      headers: err.requestOptions.headers.map((k, v) => MapEntry(k, v.toString())),
-      body: err.requestOptions.data,
-    );
+    final storedRequest = err.requestOptions.extra['unifiedRequest'] as UnifiedRequest?;
+    final request = storedRequest ??
+        UnifiedRequest(
+          method: err.requestOptions.method,
+          uri: err.requestOptions.uri,
+          headers: err.requestOptions.headers.map((k, v) => MapEntry(k, v.toString())),
+          body: err.requestOptions.data,
+        );
     final response = err.response == null
         ? null
         : UnifiedResponse(

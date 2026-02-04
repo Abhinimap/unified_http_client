@@ -9,6 +9,7 @@ import 'package:unified_http_client/result.dart';
 import 'package:unified_http_client/snackbar.dart';
 import 'package:unified_http_client/unified_interceptor.dart';
 import 'package:unified_http_client/unified_options.dart';
+import 'package:unified_http_client/network_logger.dart';
 
 /// A class to provide error Handeling functionality
 /// This uses Http as default Scheme and showSnackbar is default set to True
@@ -88,6 +89,7 @@ class UnifiedHttpClient {
     UnifiedHttpClient._interceptors = <UnifiedInterceptor>[
       ApiInterceptor(showLogs: UnifiedHttpClient.showLogs),
       ...?interceptors,
+      NetworkLogInterceptor(),
     ];
 
     // Normalize and store default headers (shared by http & dio).

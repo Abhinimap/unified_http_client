@@ -212,6 +212,29 @@ You can also update global headers **later at runtime** from anywhere in your ap
 
 ```dart
 // e.g. after a successful login
+final loginResult = await UnifiedHttpClient.post('/auth/login', body: {...});
+
+loginResult.fold(
+  (failure) {
+    // handle login error
+  },
+  (body) {
+    final token = extractTokenFrom(body);
+    UnifiedHttpClient.setDefaultHeader('Authorization', 'Bearer $token');
+  },
+);
+
+// or replace/merge multiple defaults at once
+UnifiedHttpClient.setDefaultHeaders({
+  'Authorization': 'Bearer $token',
+  'X-Session-Id': sessionId,
+});
+```
+
+You can also update global headers **later at runtime** from anywhere in your app:
+
+```dart
+// e.g. after a successful login
 result.fold(
   (failure) {
     // handle login error
@@ -262,6 +285,54 @@ result.fold(
   },
 );
 ```
+
+---
+
+## Network log viewer screen
+
+This package also includes a ready‑made **network inspector** screen, powered by a unified interceptor that records all `http` and `dio` traffic.
+
+- Logs are stored in-memory inside the package (via `NetworkLogStorage`).
+- The widget is exposed as `NetworkLogScreen` and can be used in any Flutter app.
+
+### Usage in your Flutter project
+
+1. **Import the package (and screen)**
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:unified_http_client/unified_http_client.dart'; // exports NetworkLogScreen
+```
+
+2. **Navigate to the screen from anywhere**
+
+```dart
+IconButton(
+  icon: const Icon(Icons.network_check),
+  onPressed: () {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const NetworkLogScreen(),
+      ),
+    );
+  },
+);
+```
+
+3. **Or use it as a standalone page**
+
+```dart
+class DebugNetworkPage extends StatelessWidget {
+  const DebugNetworkPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const NetworkLogScreen();
+  }
+}
+```
+
+As long as your app is using `UnifiedHttpClient` (and calling `UnifiedHttpClient().init(...)`), all requests made through the package (both `http` and `dio`) will be recorded and displayed in this screen—no extra setup or external state management required.
 
 ---
 
