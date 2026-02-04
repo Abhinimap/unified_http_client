@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:unified_http_client/dio_api.dart';
 import 'package:unified_http_client/http_api.dart';
@@ -76,14 +78,13 @@ class UnifiedHttpClient {
   }
 
   /// map response into Result
-  static Result mapHttpResponseToResult(http.Response response) {
+  static Result<String> mapHttpResponseToResult(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return Success(response);
+      return Success(response.body);
     } else {
       switch (response.statusCode) {
         case >= 200 && < 400:
           return Success(response.body);
-
         case >= 400 && < 500:
           return _failure400_499(response.statusCode, response);
         case >= 500:
@@ -96,13 +97,13 @@ class UnifiedHttpClient {
   }
 
   /// map Dio response into Result
-  static Result mapDioResponseToResult(response) {
+  static Result<String> mapDioResponseToResult(response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return Success(response);
+      return Success(jsonEncode(response.data));
     } else {
       switch (response.statusCode) {
         case >= 200 && < 400:
-          return Success(response.data);
+          return Success(jsonEncode(response.data));
 
         case >= 400 && < 500:
           return _failure400_499(response.statusCode, response);
@@ -150,7 +151,7 @@ class UnifiedHttpClient {
   }
 
   /// get request
-  static Future<Result> get(String endpoint, {int timeout = 3, Map<String, dynamic>? queryPara, Map<String, String>? headers}) async {
+  static Future<Result<String>> get(String endpoint, {int timeout = 3, Map<String, dynamic>? queryPara, Map<String, String>? headers}) async {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
     }
@@ -176,7 +177,8 @@ class UnifiedHttpClient {
   }
 
   /// POST request
-  static Future<Result> post(String endpoint, {int timeout = 3, Map<String, dynamic>? queryPara, dynamic body, Map<String, String>? headers}) async {
+  static Future<Result<String>> post(String endpoint,
+      {int timeout = 3, Map<String, dynamic>? queryPara, dynamic body, Map<String, String>? headers}) async {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
     }
@@ -202,7 +204,7 @@ class UnifiedHttpClient {
   }
 
   /// Delete request
-  static Future<Result> delete(String endpoint,
+  static Future<Result<String>> delete(String endpoint,
       {int timeout = 3, Map<String, dynamic>? queryPara, dynamic body, Map<String, String>? headers}) async {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
@@ -244,7 +246,7 @@ class UnifiedHttpClient {
   ///   },
   /// );
   /// ```
-  static Future<Result> multipart(
+  static Future<Result<String>> multipart(
     String endpoint, {
     int timeout = 3,
     Map<String, dynamic>? queryPara,
