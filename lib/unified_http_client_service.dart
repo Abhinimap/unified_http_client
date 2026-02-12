@@ -26,6 +26,21 @@ class UnifiedHttpClient {
 
   /// enable console logs
   static bool showLogs = false;
+
+  /// Optional endpoint for refresh token
+  static String? refreshTokenEndpoint;
+
+  /// Optional list of endpoints to monitor for 401 errors
+  static List<String>? refreshWhitelist;
+
+  /// Callback to handle refresh token logic.
+  /// Receives a [retryAction] that can be used to retry the original request.
+  /// Should return true if refresh was successful and the package should retry the original request.
+  static Future<bool> Function(Future<Result<String>> Function() retryAction)? onRefreshToken;
+
+  /// Callback for handling session termination
+  static VoidCallback? onLogout;
+
   static List<UnifiedInterceptor> _interceptors = <UnifiedInterceptor>[];
 
   /// default headers configured via [init] and merged
@@ -84,10 +99,19 @@ class UnifiedHttpClient {
     bool? followRedirects,
     int? maxRedirects,
     bool? persistentConnection,
+    String? refreshTokenEndpoint,
+    List<String>? refreshWhitelist,
+    Future<bool> Function(Future<Result<String>> Function() retryAction)? onRefreshToken,
+    VoidCallback? onLogout,
   }) {
     UnifiedHttpClient.useHttp = usehttp ?? true;
     UnifiedHttpClient.showSnackbar = showSnackbar ?? true;
     UnifiedHttpClient.showLogs = showLogs ?? false;
+    UnifiedHttpClient.refreshTokenEndpoint = refreshTokenEndpoint;
+    UnifiedHttpClient.refreshWhitelist = refreshWhitelist;
+    UnifiedHttpClient.onRefreshToken = onRefreshToken;
+    UnifiedHttpClient.onLogout = onLogout;
+
     UnifiedHttpClient._interceptors = <UnifiedInterceptor>[
       ApiInterceptor(showLogs: UnifiedHttpClient.showLogs),
       ...?interceptors,
@@ -203,7 +227,8 @@ class UnifiedHttpClient {
   }
 
   /// get request
-  static Future<Result<String>> get(String endpoint, {int timeout = 3, Map<String, dynamic>? queryPara, Map<String, String>? headers}) async {
+  static Future<Result<String>> get(String endpoint,
+      {int timeout = 3, Map<String, dynamic>? queryPara, Map<String, String>? headers, bool isRetry = false}) async {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
     }
@@ -214,6 +239,7 @@ class UnifiedHttpClient {
       if (headers != null) ...headers,
     };
 
+    Result<String> result;
     if (useHttp) {
       final res = await PackageHttp.getRequest(
         url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
@@ -221,27 +247,37 @@ class UnifiedHttpClient {
       );
 
       if (res.runtimeType == Failure) {
-        return res as Failure;
+        result = res as Failure;
+      } else {
+        PackageLogger.log("api call was on  : ${(res as http.Response).request?.url}");
+        result = mapHttpResponseToResult(res);
       }
-      PackageLogger.log("api call was on  : ${(res as http.Response).request?.url}");
-      return mapHttpResponseToResult(res);
     } else {
       final res = await PackageDio.dioGet(
         urlPath: endpoint,
         headers: mergedHeaders.isEmpty ? null : mergedHeaders,
         queryPara: queryPara,
       );
-      return res.fold((l) {
+      result = res.fold((l) {
         return l;
       }, (r) {
         return mapDioResponseToResult(r);
       });
     }
+
+    if (result is Failure && result.unifiedHttpClientEnum == UnifiedHttpClientEnum.unAuthorizationError && !isRetry) {
+      return await handle401(
+        result,
+        () => get(endpoint, timeout: timeout, queryPara: queryPara, headers: headers, isRetry: true),
+        endpoint,
+      );
+    }
+    return result;
   }
 
   /// POST request
   static Future<Result<String>> post(String endpoint,
-      {int timeout = 3, Map<String, dynamic>? queryPara, dynamic body, Map<String, String>? headers}) async {
+      {int timeout = 3, Map<String, dynamic>? queryPara, dynamic body, Map<String, String>? headers, bool isRetry = false}) async {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
     }
@@ -252,6 +288,7 @@ class UnifiedHttpClient {
       if (headers != null) ...headers,
     };
 
+    Result<String> result;
     if (useHttp) {
       final res = await PackageHttp.postRequest(
         url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
@@ -260,26 +297,36 @@ class UnifiedHttpClient {
       );
 
       if (res.runtimeType == Failure) {
-        return res as Failure;
+        result = res as Failure;
+      } else {
+        result = mapHttpResponseToResult(res);
       }
-      return mapHttpResponseToResult(res);
     } else {
       final res = await PackageDio.dioPost(
         urlPath: endpoint,
         headers: mergedHeaders.isEmpty ? null : mergedHeaders,
         queryPara: queryPara,
       );
-      return res.fold((l) {
+      result = res.fold((l) {
         return l;
       }, (r) {
         return mapDioResponseToResult(r);
       });
     }
+
+    if (result is Failure && result.unifiedHttpClientEnum == UnifiedHttpClientEnum.unAuthorizationError && !isRetry) {
+      return await handle401(
+        result,
+        () => post(endpoint, timeout: timeout, queryPara: queryPara, body: body, headers: headers, isRetry: true),
+        endpoint,
+      );
+    }
+    return result;
   }
 
   /// Delete request
   static Future<Result<String>> delete(String endpoint,
-      {int timeout = 3, Map<String, dynamic>? queryPara, dynamic body, Map<String, String>? headers}) async {
+      {int timeout = 3, Map<String, dynamic>? queryPara, dynamic body, Map<String, String>? headers, bool isRetry = false}) async {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
     }
@@ -290,6 +337,7 @@ class UnifiedHttpClient {
       if (headers != null) ...headers,
     };
 
+    Result<String> result;
     if (useHttp) {
       final res = await PackageHttp.deleteRequest(
         url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
@@ -297,21 +345,31 @@ class UnifiedHttpClient {
       );
 
       if (res.runtimeType == Failure) {
-        return res as Failure;
+        result = res as Failure;
+      } else {
+        result = mapHttpResponseToResult(res);
       }
-      return mapHttpResponseToResult(res);
     } else {
       final res = await PackageDio.dioDelete(
         urlPath: endpoint,
         headers: mergedHeaders.isEmpty ? null : mergedHeaders,
         queryPara: queryPara,
       );
-      return res.fold((l) {
+      result = res.fold((l) {
         return l;
       }, (r) {
         return mapDioResponseToResult(r);
       });
     }
+
+    if (result is Failure && result.unifiedHttpClientEnum == UnifiedHttpClientEnum.unAuthorizationError && !isRetry) {
+      return await handle401(
+        result,
+        () => delete(endpoint, timeout: timeout, queryPara: queryPara, body: body, headers: headers, isRetry: true),
+        endpoint,
+      );
+    }
+    return result;
   }
 
   /// Multipart request for file uploads
@@ -338,6 +396,7 @@ class UnifiedHttpClient {
     Map<String, String>? headers,
     Map<String, Map<String, dynamic>>? files,
     Map<String, String>? fields,
+    bool isRetry = false,
   }) async {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
@@ -349,6 +408,7 @@ class UnifiedHttpClient {
       if (headers != null) ...headers,
     };
 
+    Result<String> result;
     if (useHttp) {
       final res = await PackageHttp.multipartRequest(
         url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
@@ -358,9 +418,10 @@ class UnifiedHttpClient {
       );
 
       if (res.runtimeType == Failure) {
-        return res as Failure;
+        result = res as Failure;
+      } else {
+        result = mapHttpResponseToResult(res);
       }
-      return mapHttpResponseToResult(res);
     } else {
       final res = await PackageDio.dioMultipart(
         urlPath: endpoint,
@@ -369,11 +430,69 @@ class UnifiedHttpClient {
         files: files,
         fields: fields,
       );
-      return res.fold((l) {
+      result = res.fold((l) {
         return l;
       }, (r) {
         return mapDioResponseToResult(r);
       });
+    }
+
+    if (result is Failure && result.unifiedHttpClientEnum == UnifiedHttpClientEnum.unAuthorizationError && !isRetry) {
+      return await handle401(
+        result,
+        () => multipart(endpoint, timeout: timeout, queryPara: queryPara, headers: headers, files: files, fields: fields, isRetry: true),
+        endpoint,
+      );
+    }
+    return result;
+  }
+
+  /// Handles 401 UnAuthorization errors by attempting to refresh the token
+  /// or calling the logout callback.
+  static Future<Result<String>> handle401(
+    Failure failure,
+    Future<Result<String>> Function() retryAction,
+    String endpoint,
+  ) async {
+    // 1. Intercept 401 status codes before returning error (Already done by caller)
+
+    // 2. Check if we are already on the refresh endpoint to avoid infinite loop
+    if (refreshTokenEndpoint != null && (endpoint == refreshTokenEndpoint || endpoint.endsWith(refreshTokenEndpoint!))) {
+      onLogout?.call();
+      return failure;
+    }
+
+    // 3. Check if current endpoint matches the whitelist (if provided)
+    // If list is empty/null: Trigger refresh callback for ALL 401 errors
+    bool isInWhitelist = refreshWhitelist == null ||
+        refreshWhitelist!.isEmpty ||
+        refreshWhitelist!.any((e) => endpoint == e || endpoint.endsWith(e));
+
+    // 4. If refresh endpoint is configured
+    if (isInWhitelist && refreshTokenEndpoint != null && refreshTokenEndpoint!.isNotEmpty) {
+      if (onRefreshToken != null) {
+        // Execute refresh token callback
+        final success = await onRefreshToken!(retryAction);
+
+        if (success) {
+          // If refresh succeeds: Retry the original request with new token
+          return await retryAction();
+        } else {
+          // If refresh fails (and didn't already trigger logout via 401 on refresh endpoint)
+          onLogout?.call();
+          return failure;
+        }
+      } else {
+        // No callback provided but endpoint configured
+        onLogout?.call();
+        return failure;
+      }
+    }
+
+    // 5. If refresh endpoint is empty or not in whitelist: Directly call logout callback
+    else {
+      onLogout?.call();
+      return failure;
     }
   }
 }
