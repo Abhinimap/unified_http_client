@@ -65,10 +65,10 @@ class PackageDio {
   }
 
   /// GET request of DIO
-  static dioGet({required String urlPath, Map<String, dynamic>? queryPara, Map<String, dynamic>? headers}) async {
+  static Future<Result<Response>> dioGet({required String urlPath, Map<String, dynamic>? queryPara, Map<String, dynamic>? headers}) async {
     try {
       final res = await _dio.get(urlPath, queryParameters: queryPara, options: Options(headers: headers));
-      return res;
+      return Success(res);
     } on PlatformException catch (e) {
       return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught :$e');
     } on SocketException catch (e) {
@@ -83,10 +83,11 @@ class PackageDio {
   }
 
   /// POST request of DIO
-  static dioPost({required String urlPath, dynamic body, Map<String, dynamic>? queryPara, Map<String, dynamic>? headers}) async {
+  static Future<Result<Response>> dioPost(
+      {required String urlPath, dynamic body, Map<String, dynamic>? queryPara, Map<String, dynamic>? headers}) async {
     try {
       final res = await _dio.post(urlPath, data: body, queryParameters: queryPara, options: Options(headers: headers));
-      return res;
+      return Success(res);
     } on PlatformException catch (e) {
       return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught :$e');
     } on SocketException catch (e) {
@@ -101,10 +102,10 @@ class PackageDio {
   }
 
   /// Delete request of DIO
-  static dioDelete({required String urlPath, Map<String, dynamic>? queryPara, Map<String, dynamic>? headers}) async {
+  static Future<Result<Response>> dioDelete({required String urlPath, Map<String, dynamic>? queryPara, Map<String, dynamic>? headers}) async {
     try {
       final res = await _dio.delete(urlPath, queryParameters: queryPara, options: Options(headers: headers));
-      return res;
+      return Success(res);
     } on PlatformException catch (e) {
       return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught :$e');
     } on SocketException catch (e) {
@@ -135,7 +136,7 @@ class PackageDio {
   ///   },
   /// );
   /// ```
-  static dioMultipart({
+  static Future<Result<Response>> dioMultipart({
     required String urlPath,
     Map<String, dynamic>? queryPara,
     Map<String, dynamic>? headers,
@@ -193,7 +194,7 @@ class PackageDio {
         queryParameters: queryPara,
         options: Options(headers: headers),
       );
-      return res;
+      return Success(res);
     } on PlatformException catch (e) {
       return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught :$e');
     } on SocketException catch (e) {

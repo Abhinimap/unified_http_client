@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:unified_http_client/dio_api.dart';
 import 'package:unified_http_client/http_api.dart';
@@ -7,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:unified_http_client/internet_checker.dart';
 import 'package:unified_http_client/result.dart';
 import 'package:unified_http_client/snackbar.dart';
+import 'package:unified_http_client/src/package_logger.dart';
 import 'package:unified_http_client/unified_interceptor.dart';
 import 'package:unified_http_client/unified_options.dart';
 import 'package:unified_http_client/network_logger.dart';
@@ -147,19 +149,19 @@ class UnifiedHttpClient {
   }
 
   /// map Dio response into Result
-  static Result<String> mapDioResponseToResult(response) {
-    if (response.statusCode >= 200 && response.statusCode < 300) {
+  static Result<String> mapDioResponseToResult(Response response) {
+    PackageLogger.log('handling response of dio : ${response.runtimeType}');
+    final statusCode = (response.statusCode ?? 0);
+    if (statusCode >= 200 && statusCode < 300) {
       return Success(jsonEncode(response.data));
     } else {
-      switch (response.statusCode) {
+      switch (statusCode) {
         case >= 200 && < 400:
           return Success(jsonEncode(response.data));
-
         case >= 400 && < 500:
-          return _failure400_499(response.statusCode, response);
+          return _failure400_499(statusCode, response);
         case >= 500:
-          return _failure500(response.statusCode, response);
-
+          return _failure500(statusCode, response);
         default:
           return const Failure(UnifiedHttpClientEnum.undefined, 'Something went wrong');
       }
@@ -169,16 +171,16 @@ class UnifiedHttpClient {
   static Failure _failure400_499(int s, res) {
     switch (s) {
       case 400:
-        return Failure(UnifiedHttpClientEnum.badRequestError, 'Bad Request.. ${res is http.Response ? res.body : res.data}');
+        return Failure(UnifiedHttpClientEnum.badRequestError, '${res is http.Response ? res.body : res.data}');
 
       case 401:
-        return Failure(UnifiedHttpClientEnum.unAuthorizationError, 'Unauthorized... ${res is http.Response ? res.body : res.data}');
+        return Failure(UnifiedHttpClientEnum.unAuthorizationError, '${res is http.Response ? res.body : res.data}');
       case 403:
-        return Failure(UnifiedHttpClientEnum.forbiddenError, 'Forbidden... ${res is http.Response ? res.body : res.data}');
+        return Failure(UnifiedHttpClientEnum.forbiddenError, '${res is http.Response ? res.body : res.data}');
       case 404:
-        return Failure(UnifiedHttpClientEnum.notFoundError, '404 Not Found... ${res is http.Response ? res.body : res.data}');
+        return Failure(UnifiedHttpClientEnum.notFoundError, '${res is http.Response ? res.body : res.data}');
       case 409:
-        return Failure(UnifiedHttpClientEnum.conflictError, '409... ${res is http.Response ? res.body : res.data}');
+        return Failure(UnifiedHttpClientEnum.conflictError, '${res is http.Response ? res.body : res.data}');
       default:
         return const Failure(UnifiedHttpClientEnum.undefined, 'something went wrong...');
     }
@@ -221,7 +223,7 @@ class UnifiedHttpClient {
       if (res.runtimeType == Failure) {
         return res as Failure;
       }
-      debugPrint("api call was on  : ${(res as http.Response).request?.url}");
+      PackageLogger.log("api call was on  : ${(res as http.Response).request?.url}");
       return mapHttpResponseToResult(res);
     } else {
       final res = await PackageDio.dioGet(
@@ -229,11 +231,11 @@ class UnifiedHttpClient {
         headers: mergedHeaders.isEmpty ? null : mergedHeaders,
         queryPara: queryPara,
       );
-
-      if (res.runtimeType == Failure) {
-        return res as Failure;
-      }
-      return mapDioResponseToResult(res);
+      return res.fold((l) {
+        return l;
+      }, (r) {
+        return mapDioResponseToResult(r);
+      });
     }
   }
 
@@ -267,11 +269,11 @@ class UnifiedHttpClient {
         headers: mergedHeaders.isEmpty ? null : mergedHeaders,
         queryPara: queryPara,
       );
-      debugPrint("response in post request :$res");
-      if (res.runtimeType == Failure) {
-        return res as Failure;
-      }
-      return mapDioResponseToResult(res);
+      return res.fold((l) {
+        return l;
+      }, (r) {
+        return mapDioResponseToResult(r);
+      });
     }
   }
 
@@ -304,11 +306,11 @@ class UnifiedHttpClient {
         headers: mergedHeaders.isEmpty ? null : mergedHeaders,
         queryPara: queryPara,
       );
-      debugPrint("response in post request :$res");
-      if (res.runtimeType == Failure) {
-        return res as Failure;
-      }
-      return mapDioResponseToResult(res);
+      return res.fold((l) {
+        return l;
+      }, (r) {
+        return mapDioResponseToResult(r);
+      });
     }
   }
 
@@ -367,11 +369,11 @@ class UnifiedHttpClient {
         files: files,
         fields: fields,
       );
-
-      if (res.runtimeType == Failure) {
-        return res as Failure;
-      }
-      return mapDioResponseToResult(res);
+      return res.fold((l) {
+        return l;
+      }, (r) {
+        return mapDioResponseToResult(r);
+      });
     }
   }
 }
