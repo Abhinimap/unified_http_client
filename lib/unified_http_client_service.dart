@@ -229,147 +229,42 @@ class UnifiedHttpClient {
   /// get request
   static Future<Result<String>> get(String endpoint,
       {int timeout = 3, Map<String, dynamic>? queryPara, Map<String, String>? headers, bool isRetry = false}) async {
-    if (!await InternetConnectionChecker().hasConnection) {
-      CustomSnackbar().showNoInternetSnackbar();
-    }
-
-    // Merge headers: init-level defaults + per-call overrides.
-    final mergedHeaders = <String, String>{
-      ...defaultHeaders,
-      if (headers != null) ...headers,
-    };
-
-    Result<String> result;
-    if (useHttp) {
-      final res = await PackageHttp.getRequest(
-        url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
-        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
-      );
-
-      if (res.runtimeType == Failure) {
-        result = res as Failure;
-      } else {
-        PackageLogger.log("api call was on  : ${(res as http.Response).request?.url}");
-        result = mapHttpResponseToResult(res);
-      }
-    } else {
-      final res = await PackageDio.dioGet(
-        urlPath: endpoint,
-        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
-        queryPara: queryPara,
-      );
-      result = res.fold((l) {
-        return l;
-      }, (r) {
-        return mapDioResponseToResult(r);
-      });
-    }
-
-    if (result is Failure && result.unifiedHttpClientEnum == UnifiedHttpClientEnum.unAuthorizationError && !isRetry) {
-      return await handle401(
-        result,
-        () => get(endpoint, timeout: timeout, queryPara: queryPara, headers: headers, isRetry: true),
-        endpoint,
-      );
-    }
-    return result;
+    return _request(
+      endpoint,
+      type: _RequestType.get,
+      timeout: timeout,
+      queryPara: queryPara,
+      headers: headers,
+      isRetry: isRetry,
+    );
   }
 
   /// POST request
   static Future<Result<String>> post(String endpoint,
       {int timeout = 3, Map<String, dynamic>? queryPara, dynamic body, Map<String, String>? headers, bool isRetry = false}) async {
-    if (!await InternetConnectionChecker().hasConnection) {
-      CustomSnackbar().showNoInternetSnackbar();
-    }
-
-    // Merge headers: init-level defaults + per-call overrides.
-    final mergedHeaders = <String, String>{
-      ...defaultHeaders,
-      if (headers != null) ...headers,
-    };
-
-    Result<String> result;
-    if (useHttp) {
-      final res = await PackageHttp.postRequest(
-        url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
-        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
-        body: body,
-      );
-
-      if (res.runtimeType == Failure) {
-        result = res as Failure;
-      } else {
-        result = mapHttpResponseToResult(res);
-      }
-    } else {
-      final res = await PackageDio.dioPost(
-        urlPath: endpoint,
-        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
-        queryPara: queryPara,
-      );
-      result = res.fold((l) {
-        return l;
-      }, (r) {
-        return mapDioResponseToResult(r);
-      });
-    }
-
-    if (result is Failure && result.unifiedHttpClientEnum == UnifiedHttpClientEnum.unAuthorizationError && !isRetry) {
-      return await handle401(
-        result,
-        () => post(endpoint, timeout: timeout, queryPara: queryPara, body: body, headers: headers, isRetry: true),
-        endpoint,
-      );
-    }
-    return result;
+    return _request(
+      endpoint,
+      type: _RequestType.post,
+      timeout: timeout,
+      queryPara: queryPara,
+      body: body,
+      headers: headers,
+      isRetry: isRetry,
+    );
   }
 
   /// Delete request
   static Future<Result<String>> delete(String endpoint,
       {int timeout = 3, Map<String, dynamic>? queryPara, dynamic body, Map<String, String>? headers, bool isRetry = false}) async {
-    if (!await InternetConnectionChecker().hasConnection) {
-      CustomSnackbar().showNoInternetSnackbar();
-    }
-
-    // Merge headers: init-level defaults + per-call overrides.
-    final mergedHeaders = <String, String>{
-      ...defaultHeaders,
-      if (headers != null) ...headers,
-    };
-
-    Result<String> result;
-    if (useHttp) {
-      final res = await PackageHttp.deleteRequest(
-        url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
-        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
-      );
-
-      if (res.runtimeType == Failure) {
-        result = res as Failure;
-      } else {
-        result = mapHttpResponseToResult(res);
-      }
-    } else {
-      final res = await PackageDio.dioDelete(
-        urlPath: endpoint,
-        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
-        queryPara: queryPara,
-      );
-      result = res.fold((l) {
-        return l;
-      }, (r) {
-        return mapDioResponseToResult(r);
-      });
-    }
-
-    if (result is Failure && result.unifiedHttpClientEnum == UnifiedHttpClientEnum.unAuthorizationError && !isRetry) {
-      return await handle401(
-        result,
-        () => delete(endpoint, timeout: timeout, queryPara: queryPara, body: body, headers: headers, isRetry: true),
-        endpoint,
-      );
-    }
-    return result;
+    return _request(
+      endpoint,
+      type: _RequestType.delete,
+      timeout: timeout,
+      queryPara: queryPara,
+      body: body,
+      headers: headers,
+      isRetry: isRetry,
+    );
   }
 
   /// Multipart request for file uploads
@@ -398,6 +293,30 @@ class UnifiedHttpClient {
     Map<String, String>? fields,
     bool isRetry = false,
   }) async {
+    return _request(
+      endpoint,
+      type: _RequestType.multipart,
+      timeout: timeout,
+      queryPara: queryPara,
+      headers: headers,
+      files: files,
+      fields: fields,
+      isRetry: isRetry,
+    );
+  }
+
+  /// Internal centralized request method
+  static Future<Result<String>> _request(
+    String endpoint, {
+    required _RequestType type,
+    int timeout = 3,
+    Map<String, dynamic>? queryPara,
+    Map<String, String>? headers,
+    dynamic body,
+    Map<String, Map<String, dynamic>>? files,
+    Map<String, String>? fields,
+    bool isRetry = false,
+  }) async {
     if (!await InternetConnectionChecker().hasConnection) {
       CustomSnackbar().showNoInternetSnackbar();
     }
@@ -410,37 +329,74 @@ class UnifiedHttpClient {
 
     Result<String> result;
     if (useHttp) {
-      final res = await PackageHttp.multipartRequest(
-        url: PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara),
-        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
-        files: files,
-        fields: fields,
-      );
+      dynamic res;
+      final url = PackageHttp.getUriFromEndpoints(endpoint: endpoint, queryParams: queryPara);
+      final headersMap = mergedHeaders.isEmpty ? null : mergedHeaders;
 
-      if (res.runtimeType == Failure) {
-        result = res as Failure;
+      switch (type) {
+        case _RequestType.get:
+          res = await PackageHttp.getRequest(url: url, headers: headersMap);
+          break;
+        case _RequestType.post:
+          res = await PackageHttp.postRequest(url: url, headers: headersMap, body: body);
+          break;
+        case _RequestType.delete:
+          res = await PackageHttp.deleteRequest(url: url, headers: headersMap);
+          break;
+        case _RequestType.multipart:
+          res = await PackageHttp.multipartRequest(url: url, headers: headersMap, files: files, fields: fields);
+          break;
+      }
+
+      if (res is Failure) {
+        result = res;
       } else {
-        result = mapHttpResponseToResult(res);
+        if (type == _RequestType.get) {
+          PackageLogger.log("api call was on  : ${(res as http.Response).request?.url}");
+        }
+        result = mapHttpResponseToResult(res as http.Response);
       }
     } else {
-      final res = await PackageDio.dioMultipart(
-        urlPath: endpoint,
-        headers: mergedHeaders.isEmpty ? null : mergedHeaders,
-        queryPara: queryPara,
-        files: files,
-        fields: fields,
-      );
-      result = res.fold((l) {
-        return l;
-      }, (r) {
-        return mapDioResponseToResult(r);
-      });
+      Result<Response> res;
+      final headersMap = mergedHeaders.isEmpty ? null : mergedHeaders;
+
+      switch (type) {
+        case _RequestType.get:
+          res = await PackageDio.dioGet(urlPath: endpoint, headers: headersMap, queryPara: queryPara);
+          break;
+        case _RequestType.post:
+          res = await PackageDio.dioPost(urlPath: endpoint, headers: headersMap, queryPara: queryPara, body: body);
+          break;
+        case _RequestType.delete:
+          res = await PackageDio.dioDelete(urlPath: endpoint, headers: headersMap, queryPara: queryPara);
+          break;
+        case _RequestType.multipart:
+          res = await PackageDio.dioMultipart(
+            urlPath: endpoint,
+            headers: headersMap,
+            queryPara: queryPara,
+            files: files,
+            fields: fields,
+          );
+          break;
+      }
+      result = res.fold((l) => l, (r) => mapDioResponseToResult(r));
     }
 
     if (result is Failure && result.unifiedHttpClientEnum == UnifiedHttpClientEnum.unAuthorizationError && !isRetry) {
       return await handle401(
         result,
-        () => multipart(endpoint, timeout: timeout, queryPara: queryPara, headers: headers, files: files, fields: fields, isRetry: true),
+        () => _request(
+          endpoint,
+          type: type,
+          timeout: timeout,
+          queryPara: queryPara,
+          headers: headers,
+          body: body,
+          files: files,
+          fields: fields,
+          isRetry: true,
+        ),
         endpoint,
       );
     }
@@ -496,6 +452,9 @@ class UnifiedHttpClient {
     }
   }
 }
+
+/// Request types supported by the package
+enum _RequestType { get, post, delete, multipart }
 
 /// A Class to Hold Error response in Structured manner
 class ErrorResponseHolder {
