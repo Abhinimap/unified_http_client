@@ -1,4 +1,5 @@
 import 'package:example/controller.dart';
+import 'package:example/login.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:unified_http_client/unified_http_client.dart';
@@ -7,19 +8,53 @@ import 'package:unified_http_client/unified_interceptor.dart';
 void main() async {
   /// Single entry point: pick http/dio, base url, logging and extra interceptors
   UnifiedHttpClient().init(
-    usehttp: false, // set true to use the http package instead of dio
-    baseUrl: 'https://66c45adfb026f3cc6ceefd10.mockapi.io',
-    showLogs: true,
-    interceptors: [
-      // optional extra interceptor to inject headers or inspect payloads
-      ApiInterceptor(
-        onRequestOverride: (req) {
-          req.headers['X-Demo-Header'] = 'demo';
-          return req;
-        },
-      ),
-    ],
-  );
+      usehttp: false, // set true to use the http package instead of dio
+      baseUrl: 'https://69de-103-143-8-45.ngrok-free.app',
+      showLogs: true,
+      interceptors: [
+        // optional extra interceptor to inject headers or inspect payloads
+        ApiInterceptor(
+          onRequestOverride: (req) {
+            req.headers['X-Demo-Header'] = 'demo';
+            return req;
+          },
+        ),
+      ],
+      onLogout: () {
+        debugPrint("Logout callback triggered - User session expired");
+        // TODO: Clear local storage, navigate to login screen
+      },
+      refreshWhitelist: ['posts'], // Only refresh token for these endpoints
+      refreshTokenEndpoint: '/auth/refresh',
+      
+      // Callback to provide refresh token body
+      getRefreshTokenBody: () {
+        // TODO: Get refresh token from local storage
+        final refreshToken = "your_refresh_token_from_storage";
+        return {
+          'refreshToken': refreshToken,
+        };
+      },
+      
+      // Callback when new tokens are received after refresh
+      onTokenRefreshed: (newTokens) async {
+        debugPrint("New tokens received: $newTokens");
+        
+        // Extract and save new tokens
+        final newAccessToken = newTokens['accessToken'];
+        // final newRefreshToken = newTokens['refreshToken'];
+        
+        // TODO: Save to local storage (SharedPreferences, Hive, etc.)
+        // await storage.write('access_token', newAccessToken);
+        // await storage.write('refresh_token', newRefreshToken);
+        
+        // Update the default headers with new access token
+        if (newAccessToken != null) {
+          UnifiedHttpClient.setDefaultHeader('Authorization', 'Bearer $newAccessToken');
+        }
+        
+        debugPrint("Tokens saved successfully");
+      });
 
   runApp(const MyApp());
 }
@@ -35,7 +70,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Error Handeler Example'),
+      home: LoginPage(),
     );
   }
 }
@@ -54,7 +89,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // enter your own url to test
   // String url = 'https://mocki.io/v1/cbde42ba-5b27-4530-8fc5-2d3aa669ccbd';
-  String url = 'https://66c45adfb026f3cc6ceefd10.mockapi.io/data/posstdata';
+  String url = 'https://69de-103-143-8-45.ngrok-free.app/posts';
 
   final cont = Get.put(ApiController());
   @override

@@ -64,6 +64,109 @@ class PackageDio {
     );
   }
 
+  static Failure handleDioException(DioException exp) {
+    // Default fallback
+    UnifiedHttpClientEnum type = UnifiedHttpClientEnum.undefined;
+    String message = "Something went wrong";
+
+    // 1️⃣ Response based errors (server responded)
+    if (exp.response != null) {
+      final statusCode = exp.response?.statusCode;
+      final serverMessage = exp.response?.data is Map && exp.response?.data['message'] != null
+          ? exp.response?.data['message'].toString()
+          : exp.message ?? "Server error";
+
+      switch (statusCode) {
+        case 400:
+          type = UnifiedHttpClientEnum.badRequestError;
+          break;
+        case 401:
+          type = UnifiedHttpClientEnum.unAuthorizationError;
+          break;
+        case 403:
+          type = UnifiedHttpClientEnum.forbiddenError;
+          break;
+        case 404:
+          type = UnifiedHttpClientEnum.notFoundError;
+          break;
+        case 409:
+          type = UnifiedHttpClientEnum.conflictError;
+          break;
+        case 500:
+          type = UnifiedHttpClientEnum.internalServerError;
+          break;
+        case 501:
+          type = UnifiedHttpClientEnum.serverNotSupportError;
+          break;
+        case 503:
+          type = UnifiedHttpClientEnum.serverUnavailableError;
+          break;
+        case 504:
+          type = UnifiedHttpClientEnum.serverGatewayTimeOut;
+          break;
+        default:
+          type = UnifiedHttpClientEnum.undefined;
+          break;
+      }
+
+      return Failure(type, serverMessage ?? 'something went wrong...');
+    }
+
+    // 2️⃣ Timeout
+    if (exp.type == DioExceptionType.connectionTimeout || exp.type == DioExceptionType.sendTimeout || exp.type == DioExceptionType.receiveTimeout) {
+      return const Failure(
+        UnifiedHttpClientEnum.timeOutError,
+        "Connection timed out",
+      );
+    }
+
+    // 3️⃣ No internet / socket
+    if (exp.error is SocketException) {
+      return const Failure(
+        UnifiedHttpClientEnum.noInternetError,
+        "No internet connection",
+      );
+    }
+
+    // 4️⃣ Format exception
+    if (exp.error is FormatException) {
+      return const Failure(
+        UnifiedHttpClientEnum.formatExceptionError,
+        "Invalid response format",
+      );
+    }
+
+    // 5️⃣ Platform exception
+    if (exp.error is PlatformException) {
+      return const Failure(
+        UnifiedHttpClientEnum.platformExceptionError,
+        "Platform error occurred",
+      );
+    }
+
+    // 6️⃣ Cancelled
+    if (exp.type == DioExceptionType.cancel) {
+      return const Failure(
+        UnifiedHttpClientEnum.undefined,
+        "Request cancelled",
+      );
+    }
+
+    // 7️⃣ Unknown Dio error
+    if (exp.type == DioExceptionType.unknown) {
+      return Failure(
+        UnifiedHttpClientEnum.socketExceptionError,
+        exp.message ?? "Network error",
+      );
+    }
+
+    // 8️⃣ Absolute fallback
+    return Failure(
+      UnifiedHttpClientEnum.undefined,
+      exp.message ?? "Unexpected error occurred",
+    );
+  }
+
   /// GET request of DIO
   static Future<Result<Response>> dioGet({required String urlPath, Map<String, dynamic>? queryPara, Map<String, dynamic>? headers}) async {
     try {
@@ -76,7 +179,7 @@ class PackageDio {
     } on FormatException catch (e) {
       return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception Error : $e');
     } on DioException catch (e) {
-      return Failure(UnifiedHttpClientEnum.undefined, 'Dio Exception in multipart: ${e.message}');
+      return handleDioException(e);
     } catch (e) {
       return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
@@ -95,7 +198,7 @@ class PackageDio {
     } on FormatException catch (e) {
       return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception Error : $e');
     } on DioException catch (e) {
-      return Failure(UnifiedHttpClientEnum.undefined, 'Dio Exception in multipart: ${e.message}');
+      return handleDioException(e);
     } catch (e) {
       return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
@@ -113,7 +216,7 @@ class PackageDio {
     } on FormatException catch (e) {
       return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception Error : $e');
     } on DioException catch (e) {
-      return Failure(UnifiedHttpClientEnum.undefined, 'Dio Exception in multipart: ${e.message}');
+      return handleDioException(e);
     } catch (e) {
       return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }
@@ -202,7 +305,7 @@ class PackageDio {
     } on FormatException catch (e) {
       return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception Error : $e');
     } on DioException catch (e) {
-      return Failure(UnifiedHttpClientEnum.undefined, 'Dio Exception in multipart: ${e.message}');
+      return handleDioException(e);
     } catch (e) {
       return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
     }

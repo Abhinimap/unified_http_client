@@ -117,4 +117,3 @@ class NetworkLogInterceptor extends UnifiedInterceptor {
     return error;
   }
 }
-

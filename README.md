@@ -5,6 +5,7 @@
 - **Unified API**: call `UnifiedHttpClient.get/post/delete/multipart` and switch between `http` and `dio` with a single flag.
 - **Centralized headers**: configure common headers once in `init()`; they are automatically applied to all requests for both `http` and `dio`, with per-call overrides still possible.
 - **Unified error model**: instead of throwing, requests return a `Result<Success, Failure>` with a rich `UnifiedHttpClientEnum` error type and messages.
+- **Automatic token refresh**: built-in support for refreshing expired tokens on 401 errors, with automatic retry—zero user interaction required.
 - **Network checking & snackbar**: optional internet availability check with a built-in "no internet" snackbar helper.
 - **Interceptors**: plug in `UnifiedInterceptor`s once and have them applied consistently for both `http` and `dio`.
 
@@ -335,6 +336,93 @@ class DebugNetworkPage extends StatelessWidget {
 ```
 
 As long as your app is using `UnifiedHttpClient` (and calling `UnifiedHttpClient().init(...)`), all requests made through the package (both `http` and `dio`) will be recorded and displayed in this screen—no extra setup or external state management required.
+
+---
+
+## Automatic token refresh (401 handling)
+
+This package includes **built-in support** for automatically refreshing expired access tokens when your API returns a 401 (Unauthorized) status. The entire flow—detecting 401, calling your refresh endpoint, saving new tokens, and retrying the original request—happens automatically without any user interaction.
+
+### How it works
+
+```
+User calls API → 401 response → Package calls refresh endpoint →
+Saves new tokens → Retries original request → Returns data
+```
+
+**Your user code simply receives the data—as if nothing happened!**
+
+### Quick setup
+
+```dart
+UnifiedHttpClient().init(
+  baseUrl: 'https://api.example.com',
+  
+  // 1. Specify your refresh token endpoint
+  refreshTokenEndpoint: '/auth/refresh',
+  
+  // 2. (Optional) Only refresh for specific endpoints
+  refreshWhitelist: ['/posts', '/user', '/profile'],
+  
+  // 3. Provide refresh token for the refresh request
+  getRefreshTokenBody: () {
+    final refreshToken = storage.read('refresh_token');
+    return {'refreshToken': refreshToken};
+  },
+  
+  // 4. Save new tokens when refresh succeeds
+  onTokenRefreshed: (newTokens) async {
+    await storage.write('access_token', newTokens['accessToken']);
+    await storage.write('refresh_token', newTokens['refreshToken']);
+    
+    // Update authorization header with new token
+    UnifiedHttpClient.setDefaultHeader(
+      'Authorization',
+      'Bearer ${newTokens['accessToken']}',
+    );
+  },
+  
+  // 5. Handle session expiry when refresh fails
+  onLogout: () {
+    storage.clear();
+    Navigator.pushReplacementNamed(context, '/login');
+  },
+);
+```
+
+### Using it in your code
+
+```dart
+// Just make the API call—token refresh is automatic!
+final result = await UnifiedHttpClient.get('/posts');
+
+result.fold(
+  (failure) => print('Error: ${failure.message}'),
+  (response) => print('Success: $response'),
+);
+
+// Even if the access token expired:
+// 1. Package detects 401
+// 2. Calls /auth/refresh automatically
+// 3. Saves new tokens via onTokenRefreshed callback
+// 4. Retries /posts with new token
+// 5. Returns the data!
+```
+
+### Features
+
+- ✅ **Zero user interaction**: completely automatic
+- ✅ **Infinite loop prevention**: won't refresh if refresh endpoint returns 401
+- ✅ **Whitelist support**: only refresh for specific endpoints (optional)
+- ✅ **Token save callback**: receive new tokens to save to storage
+- ✅ **Automatic retry**: original request retried with new token
+- ✅ **Logout callback**: handle session expiry gracefully
+
+### Documentation
+
+For a complete guide with advanced examples, see:
+- **[REFRESH_TOKEN_GUIDE.md](REFRESH_TOKEN_GUIDE.md)** - Comprehensive usage guide
+- **[example/lib/refresh_token_example.dart](example/lib/refresh_token_example.dart)** - Working demo
 
 ---
 

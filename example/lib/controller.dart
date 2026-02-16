@@ -23,7 +23,7 @@ class ApiController extends GetxController {
   Future<void> callApi() async {
     clear();
     final Result response = await UnifiedHttpClient.get(
-      '/data/postdata',
+      '/posts',
     );
 
     response.fold((e) {

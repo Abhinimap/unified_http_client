@@ -33,10 +33,16 @@ class UnifiedHttpClient {
   /// Optional list of endpoints to monitor for 401 errors
   static List<String>? refreshWhitelist;
 
-  /// Callback to handle refresh token logic.
-  /// Receives a [retryAction] that can be used to retry the original request.
-  /// Should return true if refresh was successful and the package should retry the original request.
-  static Future<bool> Function(Future<Result<String>> Function() retryAction)? onRefreshToken;
+  /// Callback when tokens are refreshed.
+  /// Receives the new tokens from refresh endpoint response.
+  /// Use this to save tokens to local storage.
+  /// The package will automatically retry the original request after this callback.
+  static Future<void> Function(Map<String, dynamic> newTokens)? onTokenRefreshed;
+
+  /// Optional callback to provide refresh token request body.
+  /// If not provided, the package will make a POST request to refreshTokenEndpoint
+  /// with default headers (expecting refresh token in Authorization header).
+  static Map<String, dynamic> Function()? getRefreshTokenBody;
 
   /// Callback for handling session termination
   static VoidCallback? onLogout;
@@ -101,7 +107,8 @@ class UnifiedHttpClient {
     bool? persistentConnection,
     String? refreshTokenEndpoint,
     List<String>? refreshWhitelist,
-    Future<bool> Function(Future<Result<String>> Function() retryAction)? onRefreshToken,
+    Future<void> Function(Map<String, dynamic> newTokens)? onTokenRefreshed,
+    Map<String, dynamic> Function()? getRefreshTokenBody,
     VoidCallback? onLogout,
   }) {
     UnifiedHttpClient.useHttp = usehttp ?? true;
@@ -109,7 +116,8 @@ class UnifiedHttpClient {
     UnifiedHttpClient.showLogs = showLogs ?? false;
     UnifiedHttpClient.refreshTokenEndpoint = refreshTokenEndpoint;
     UnifiedHttpClient.refreshWhitelist = refreshWhitelist;
-    UnifiedHttpClient.onRefreshToken = onRefreshToken;
+    UnifiedHttpClient.onTokenRefreshed = onTokenRefreshed;
+    UnifiedHttpClient.getRefreshTokenBody = getRefreshTokenBody;
     UnifiedHttpClient.onLogout = onLogout;
 
     UnifiedHttpClient._interceptors = <UnifiedInterceptor>[
@@ -410,41 +418,75 @@ class UnifiedHttpClient {
     Future<Result<String>> Function() retryAction,
     String endpoint,
   ) async {
-    // 1. Intercept 401 status codes before returning error (Already done by caller)
-
-    // 2. Check if we are already on the refresh endpoint to avoid infinite loop
+    // 1. Check if we are already on the refresh endpoint to avoid infinite loop
     if (refreshTokenEndpoint != null && (endpoint == refreshTokenEndpoint || endpoint.endsWith(refreshTokenEndpoint!))) {
+      PackageLogger.log('401 on refresh endpoint - calling logout');
       onLogout?.call();
       return failure;
     }
 
-    // 3. Check if current endpoint matches the whitelist (if provided)
-    // If list is empty/null: Trigger refresh callback for ALL 401 errors
+    // 2. Check if current endpoint matches the whitelist (if provided)
+    // If list is empty/null: Trigger refresh for ALL 401 errors
     bool isInWhitelist = refreshWhitelist == null || refreshWhitelist!.isEmpty || refreshWhitelist!.any((e) => endpoint == e || endpoint.endsWith(e));
 
-    // 4. If refresh endpoint is configured
-    if (isInWhitelist && refreshTokenEndpoint != null && refreshTokenEndpoint!.isNotEmpty) {
-      if (onRefreshToken != null) {
-        // Execute refresh token callback
-        final success = await onRefreshToken!(retryAction);
+    // 3. If not in whitelist, directly call logout
+    if (!isInWhitelist) {
+      PackageLogger.log('Endpoint not in whitelist - calling logout');
+      onLogout?.call();
+      return failure;
+    }
 
-        if (success) {
-          // If refresh succeeds: Retry the original request with new token
+    // 4. If refresh endpoint is not configured, call logout
+    if (refreshTokenEndpoint == null || refreshTokenEndpoint!.isEmpty) {
+      PackageLogger.log('No refresh endpoint configured - calling logout');
+      onLogout?.call();
+      return failure;
+    }
+
+    // 5. Attempt to refresh the token
+    try {
+      PackageLogger.log('Attempting to refresh token via $refreshTokenEndpoint');
+      
+      // Get refresh token body from user callback or use empty body
+      final refreshBody = getRefreshTokenBody?.call() ?? {};
+      
+      // Call the refresh token endpoint
+      final refreshResult = await post(
+        refreshTokenEndpoint!,
+        body: refreshBody,
+        isRetry: true, // Mark as retry to prevent infinite loop
+      );
+
+      // Check if refresh was successful
+      if (refreshResult is Success<String>) {
+        PackageLogger.log('Token refresh successful');
+        
+        // Parse the response to extract new tokens
+        try {
+          final responseData = jsonDecode(refreshResult.value);
+          
+          // Notify user to save the new tokens via callback
+          if (onTokenRefreshed != null) {
+            await onTokenRefreshed!(responseData is Map<String, dynamic> ? responseData : {'response': responseData});
+          }
+          
+          // Retry the original request with new tokens
+          PackageLogger.log('Retrying original request after token refresh');
           return await retryAction();
-        } else {
-          // If refresh fails (and didn't already trigger logout via 401 on refresh endpoint)
+          
+        } catch (e) {
+          PackageLogger.log('Failed to parse refresh token response: $e');
           onLogout?.call();
           return failure;
         }
       } else {
-        // No callback provided but endpoint configured
+        // Refresh failed
+        PackageLogger.log('Token refresh failed - calling logout');
         onLogout?.call();
         return failure;
       }
-    }
-
-    // 5. If refresh endpoint is empty or not in whitelist: Directly call logout callback
-    else {
+    } catch (e) {
+      PackageLogger.log('Error during token refresh: $e');
       onLogout?.call();
       return failure;
     }
