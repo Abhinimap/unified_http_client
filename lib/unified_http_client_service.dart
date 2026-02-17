@@ -156,7 +156,7 @@ class UnifiedHttpClient {
 
     // HTTP Setup
     else {
-      PackageHttp.setup(host: baseUrl ?? '');
+      PackageHttp.setup(baseUrl: baseUrl ?? '');
       PackageHttp.configureInterceptors(_interceptors);
     }
   }
@@ -446,10 +446,10 @@ class UnifiedHttpClient {
     // 5. Attempt to refresh the token
     try {
       PackageLogger.log('Attempting to refresh token via $refreshTokenEndpoint');
-      
+
       // Get refresh token body from user callback or use empty body
       final refreshBody = getRefreshTokenBody?.call() ?? {};
-      
+
       // Call the refresh token endpoint
       final refreshResult = await post(
         refreshTokenEndpoint!,
@@ -460,20 +460,19 @@ class UnifiedHttpClient {
       // Check if refresh was successful
       if (refreshResult is Success<String>) {
         PackageLogger.log('Token refresh successful');
-        
+
         // Parse the response to extract new tokens
         try {
           final responseData = jsonDecode(refreshResult.value);
-          
+
           // Notify user to save the new tokens via callback
           if (onTokenRefreshed != null) {
             await onTokenRefreshed!(responseData is Map<String, dynamic> ? responseData : {'response': responseData});
           }
-          
+
           // Retry the original request with new tokens
           PackageLogger.log('Retrying original request after token refresh');
           return await retryAction();
-          
         } catch (e) {
           PackageLogger.log('Failed to parse refresh token response: $e');
           onLogout?.call();

@@ -97,9 +97,7 @@ class NetworkLogInterceptor extends UnifiedInterceptor {
 
     if (req != null) {
       final start = req.startedAt ?? DateTime.now();
-      final duration = DateTime.now().difference(start);
-
-      NetworkLogStorage.instance.addLog(
+      final duration = DateTime.now().difference(start);      NetworkLogStorage.instance.addLog(
         NetworkLogModel(
           method: req.method,
           url: req.uri.toString(),

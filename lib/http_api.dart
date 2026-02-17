@@ -14,17 +14,14 @@ class PackageHttp {
   PackageHttp._internal();
 
   static http.Client? _client;
-  static String? _host;
   static List<UnifiedInterceptor> _interceptors = <UnifiedInterceptor>[];
 
-  /// '/api/v1/'
-  static String? _prefix;
+  static Uri? _baseUri;
 
   /// define host and prefix so that
   /// on every request only specify endpoint
-  static setup({String? host, String? prefix}) {
-    _host = host;
-    _prefix = prefix;
+  static void setup({required String baseUrl}) {
+    _baseUri = Uri.parse(baseUrl);
   }
 
   /// Configure unified interceptors (invoked from UnifiedHttpClient.init)
@@ -37,34 +34,24 @@ class PackageHttp {
   static Uri getUriFromEndpoints({
     required String endpoint,
     Map<String, dynamic>? queryParams,
-    bool usePrefix = false,
     List<String>? pathSeg,
   }) {
-    String? host = _host?.trim();
-
-    // If host contains scheme, parse it
-    String scheme = 'https';
-    if (host != null && (host.startsWith('http://') || host.startsWith('https://'))) {
-      final parsed = Uri.parse(host);
-      scheme = parsed.scheme;
-      host = parsed.host;
+    if (_baseUri == null) {
+      throw Exception('PackageHttp.setup(baseUrl: ...) not called');
     }
 
-    final segments = <String>[];
+    final base = _baseUri!;
 
-    if (usePrefix && _prefix != null && _prefix!.isNotEmpty) {
-      segments.addAll(_prefix!.split('/').where((e) => e.isNotEmpty));
-    }
-
-    segments.addAll(endpoint.split('/').where((e) => e.isNotEmpty));
-
-    if (pathSeg != null && pathSeg.isNotEmpty) {
-      segments.addAll(pathSeg);
-    }
+    final segments = <String>[
+      ...base.pathSegments.where((e) => e.isNotEmpty),
+      ...endpoint.split('/').where((e) => e.isNotEmpty),
+      if (pathSeg != null) ...pathSeg,
+    ];
 
     return Uri(
-      scheme: scheme,
-      host: host,
+      scheme: base.scheme,
+      host: base.host,
+      port: base.port,
       pathSegments: segments,
       queryParameters: queryParams,
     );
