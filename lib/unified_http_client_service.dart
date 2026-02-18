@@ -261,6 +261,20 @@ class UnifiedHttpClient {
     );
   }
 
+  /// POST request
+  static Future<Result<String>> put(String endpoint,
+      {int timeout = 3, Map<String, dynamic>? queryPara, dynamic body, Map<String, String>? headers, bool isRetry = false}) async {
+    return _request(
+      endpoint,
+      type: _RequestType.put,
+      timeout: timeout,
+      queryPara: queryPara,
+      body: body,
+      headers: headers,
+      isRetry: isRetry,
+    );
+  }
+
   /// Delete request
   static Future<Result<String>> delete(String endpoint,
       {int timeout = 3, Map<String, dynamic>? queryPara, dynamic body, Map<String, String>? headers, bool isRetry = false}) async {
@@ -348,6 +362,9 @@ class UnifiedHttpClient {
         case _RequestType.post:
           res = await PackageHttp.postRequest(url: url, headers: headersMap, body: body);
           break;
+        case _RequestType.put:
+          res = await PackageHttp.putRequest(url: url, headers: headersMap, body: body);
+          break;
         case _RequestType.delete:
           res = await PackageHttp.deleteRequest(url: url, headers: headersMap);
           break;
@@ -374,6 +391,9 @@ class UnifiedHttpClient {
           break;
         case _RequestType.post:
           res = await PackageDio.dioPost(urlPath: endpoint, headers: headersMap, queryPara: queryPara, body: body);
+          break;
+        case _RequestType.put:
+          res = await PackageDio.dioPut(urlPath: endpoint, headers: headersMap, queryPara: queryPara, body: body);
           break;
         case _RequestType.delete:
           res = await PackageDio.dioDelete(urlPath: endpoint, headers: headersMap, queryPara: queryPara);
@@ -493,7 +513,7 @@ class UnifiedHttpClient {
 }
 
 /// Request types supported by the package
-enum _RequestType { get, post, delete, multipart }
+enum _RequestType { get, post, put, delete, multipart }
 
 /// A Class to Hold Error response in Structured manner
 class ErrorResponseHolder {

@@ -204,6 +204,25 @@ class PackageDio {
     }
   }
 
+  /// POST request of DIO
+  static Future<Result<Response>> dioPut(
+      {required String urlPath, dynamic body, Map<String, dynamic>? queryPara, Map<String, dynamic>? headers}) async {
+    try {
+      final res = await _dio.put(urlPath, data: body, queryParameters: queryPara, options: Options(headers: headers));
+      return Success(res);
+    } on PlatformException catch (e) {
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught :$e');
+    } on SocketException catch (e) {
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e) {
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception Error : $e');
+    } on DioException catch (e) {
+      return handleDioException(e);
+    } catch (e) {
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
+    }
+  }
+
   /// Delete request of DIO
   static Future<Result<Response>> dioDelete({required String urlPath, Map<String, dynamic>? queryPara, Map<String, dynamic>? headers}) async {
     try {
