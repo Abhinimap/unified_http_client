@@ -182,7 +182,6 @@ class UnifiedHttpClient {
 
   /// map Dio response into Result
   static Result<String> mapDioResponseToResult(Response response) {
-    PackageLogger.log('handling response of dio : ${response.runtimeType}');
     final statusCode = (response.statusCode ?? 0);
     if (statusCode >= 200 && statusCode < 300) {
       return Success(jsonEncode(response.data));
@@ -376,9 +375,6 @@ class UnifiedHttpClient {
       if (res is Failure) {
         result = res;
       } else {
-        if (type == _RequestType.get) {
-          PackageLogger.log("api call was on  : ${(res as http.Response).request?.url}");
-        }
         result = mapHttpResponseToResult(res as http.Response);
       }
     } else {
@@ -440,7 +436,7 @@ class UnifiedHttpClient {
   ) async {
     // 1. Check if we are already on the refresh endpoint to avoid infinite loop
     if (refreshTokenEndpoint != null && (endpoint == refreshTokenEndpoint || endpoint.endsWith(refreshTokenEndpoint!))) {
-      PackageLogger.log('401 on refresh endpoint - calling logout');
+      PackageLogger.error('401 on refresh endpoint - calling logout');
       onLogout?.call();
       return failure;
     }
@@ -451,14 +447,14 @@ class UnifiedHttpClient {
 
     // 3. If not in whitelist, directly call logout
     if (!isInWhitelist) {
-      PackageLogger.log('Endpoint not in whitelist - calling logout');
+      PackageLogger.warning('Endpoint not in whitelist - calling logout');
       onLogout?.call();
       return failure;
     }
 
     // 4. If refresh endpoint is not configured, call logout
     if (refreshTokenEndpoint == null || refreshTokenEndpoint!.isEmpty) {
-      PackageLogger.log('No refresh endpoint configured - calling logout');
+      PackageLogger.error('No refresh endpoint configured - calling logout');
       onLogout?.call();
       return failure;
     }
@@ -479,7 +475,7 @@ class UnifiedHttpClient {
 
       // Check if refresh was successful
       if (refreshResult is Success<String>) {
-        PackageLogger.log('Token refresh successful');
+        PackageLogger.success('Token refresh successful');
 
         // Parse the response to extract new tokens
         try {
@@ -494,18 +490,18 @@ class UnifiedHttpClient {
           PackageLogger.log('Retrying original request after token refresh');
           return await retryAction();
         } catch (e) {
-          PackageLogger.log('Failed to parse refresh token response: $e');
+          PackageLogger.error('Failed to parse refresh token response: $e');
           onLogout?.call();
           return failure;
         }
       } else {
         // Refresh failed
-        PackageLogger.log('Token refresh failed - calling logout');
+        PackageLogger.error('Token refresh failed - calling logout');
         onLogout?.call();
         return failure;
       }
     } catch (e) {
-      PackageLogger.log('Error during token refresh: $e');
+      PackageLogger.error('Error during token refresh: $e');
       onLogout?.call();
       return failure;
     }
