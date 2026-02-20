@@ -252,6 +252,43 @@ class PackageHttp {
     }
   }
 
+  /// Http patch request
+  static patchRequest({required Uri url, Map<String, String>? headers, required Map<String, dynamic> body}) async {
+    try {
+      final prepared = await UnifiedInterceptorRunner.runOnRequest(
+        UnifiedRequest(method: 'PATCH', uri: url, headers: headers, body: body),
+        _interceptors,
+      );
+
+      final response = _client != null
+          ? await _client!.patch(prepared.uri, headers: prepared.headers, body: json.encode(prepared.body))
+          : await http.patch(prepared.uri, headers: prepared.headers, body: prepared.body);
+
+      await UnifiedInterceptorRunner.runOnResponse(
+        UnifiedResponse(
+          statusCode: response.statusCode,
+          data: response.body,
+          headers: response.headers,
+          request: prepared,
+        ),
+        _interceptors,
+      );
+      return response;
+    } on PlatformException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
+      return Failure(UnifiedHttpClientEnum.platformExceptionError, 'Platform Exception Caught : $e');
+    } on SocketException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
+      return Failure(UnifiedHttpClientEnum.socketExceptionError, 'Socket Exception:$e');
+    } on FormatException catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
+      return Failure(UnifiedHttpClientEnum.formatExceptionError, 'format exception : $e');
+    } catch (e, st) {
+      await _notifyError(e, st, request: UnifiedRequest(method: 'POST', uri: url, headers: headers, body: body));
+      return Failure(UnifiedHttpClientEnum.undefined, 'something went Wrong : $e');
+    }
+  }
+
   /// Http multipart request for file uploads
 
   /// Example:
