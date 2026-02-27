@@ -7,7 +7,7 @@ import 'package:unified_http_client/unified_interceptor.dart';
 
 void main() async {
   /// Single entry point: pick http/dio, base url, logging and extra interceptors
-  UnifiedHttpClient().init(
+  UnifiedHttpClient.init(
       usehttp: false, // set true to use the http package instead of dio
       baseUrl: 'https://69de-103-143-8-45.ngrok-free.app',
       showLogs: true,

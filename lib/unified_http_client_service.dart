@@ -91,7 +91,6 @@ class UnifiedHttpClient {
   }
 
   static
-
       /// by default it will use http and show snackbar
       void init(
           {bool? usehttp,
@@ -467,29 +466,32 @@ class UnifiedHttpClient {
       return failure;
     }
 
-    // 2. Check if current endpoint matches the whitelist (if provided)
+    // 2. If endpoint is in skipLogout list, return failure without logout or refresh
+    final shouldSkipLogout = skipLogout?.any((e) => endpoint == e || endpoint.endsWith(e)) ?? false;
+    if (shouldSkipLogout) {
+      return failure;
+    }
+
+    // 3. Check if current endpoint matches the whitelist (if provided)
     // If list is empty/null: Trigger refresh for ALL 401 errors
     bool isInWhitelist = refreshWhitelist == null || refreshWhitelist!.isEmpty || refreshWhitelist!.any((e) => endpoint == e || endpoint.endsWith(e));
 
-    // 3. If not in whitelist, directly call logout
+    // 4. If not in whitelist, directly call logout
     if (!isInWhitelist) {
       PackageLogger.warning('Endpoint not in whitelist - calling logout');
       onLogout?.call();
       return failure;
     }
 
-    // 4. If refresh endpoint is not configured, call logout
+    // 5. If refresh endpoint is not configured, call logout
     final noRefreshEndpoint = refreshTokenEndpoint == null || refreshTokenEndpoint!.isEmpty;
-
-    final shouldSkipLogout = skipLogout?.contains(endpoint) ?? false;
-
-    if (noRefreshEndpoint && !shouldSkipLogout) {
+    if (noRefreshEndpoint) {
       PackageLogger.error('No refresh endpoint configured - calling logout');
       onLogout?.call();
       return failure;
     }
 
-    // 5. Attempt to refresh the token
+    // 6. Attempt to refresh the token
     try {
       PackageLogger.log('Attempting to refresh token via $refreshTokenEndpoint');
 
