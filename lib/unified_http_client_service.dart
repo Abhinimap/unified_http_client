@@ -30,6 +30,9 @@ class UnifiedHttpClient {
   /// Optional endpoint for refresh token
   static String? refreshTokenEndpoint;
 
+  /// endpoints to skip 401 logout
+  static List<String>? skipLogout;
+
   /// Optional list of endpoints to monitor for 401 errors
   static List<String>? refreshWhitelist;
 
@@ -87,30 +90,32 @@ class UnifiedHttpClient {
     defaultHeaders.clear();
   }
 
-  /// by default it will use http and show snackbar
-  void init({
-    bool? usehttp,
-    bool? showSnackbar,
-    bool? showLogs,
-    List<UnifiedInterceptor>? interceptors,
-    String? baseUrl,
-    Map<String, dynamic>? queryParameters,
-    Duration? connectTimeout,
-    Duration? receiveTimeout,
-    Duration? sendTimeout,
-    Map<String, Object?>? extra,
-    Map<String, Object?>? headers,
-    UnifiedResponseType? responseType,
-    String? contentType,
-    bool? followRedirects,
-    int? maxRedirects,
-    bool? persistentConnection,
-    String? refreshTokenEndpoint,
-    List<String>? refreshWhitelist,
-    Future<void> Function(Map<String, dynamic> newTokens)? onTokenRefreshed,
-    Map<String, dynamic> Function()? getRefreshTokenBody,
-    VoidCallback? onLogout,
-  }) {
+  static
+
+      /// by default it will use http and show snackbar
+      void init(
+          {bool? usehttp,
+          bool? showSnackbar,
+          bool? showLogs,
+          List<UnifiedInterceptor>? interceptors,
+          String? baseUrl,
+          Map<String, dynamic>? queryParameters,
+          Duration? connectTimeout,
+          Duration? receiveTimeout,
+          Duration? sendTimeout,
+          Map<String, Object?>? extra,
+          Map<String, Object?>? headers,
+          UnifiedResponseType? responseType,
+          String? contentType,
+          bool? followRedirects,
+          int? maxRedirects,
+          bool? persistentConnection,
+          String? refreshTokenEndpoint,
+          List<String>? refreshWhitelist,
+          Future<void> Function(Map<String, dynamic> newTokens)? onTokenRefreshed,
+          Map<String, dynamic> Function()? getRefreshTokenBody,
+          VoidCallback? onLogout,
+          List<String>? skipLogout}) {
     UnifiedHttpClient.useHttp = usehttp ?? true;
     UnifiedHttpClient.showSnackbar = showSnackbar ?? true;
     UnifiedHttpClient.showLogs = showLogs ?? false;
@@ -119,6 +124,7 @@ class UnifiedHttpClient {
     UnifiedHttpClient.onTokenRefreshed = onTokenRefreshed;
     UnifiedHttpClient.getRefreshTokenBody = getRefreshTokenBody;
     UnifiedHttpClient.onLogout = onLogout;
+    UnifiedHttpClient.skipLogout = skipLogout;
 
     UnifiedHttpClient._interceptors = <UnifiedInterceptor>[
       ApiInterceptor(showLogs: UnifiedHttpClient.showLogs),
@@ -473,7 +479,11 @@ class UnifiedHttpClient {
     }
 
     // 4. If refresh endpoint is not configured, call logout
-    if (refreshTokenEndpoint == null || refreshTokenEndpoint!.isEmpty) {
+    final noRefreshEndpoint = refreshTokenEndpoint == null || refreshTokenEndpoint!.isEmpty;
+
+    final shouldSkipLogout = skipLogout?.contains(endpoint) ?? false;
+
+    if (noRefreshEndpoint && !shouldSkipLogout) {
       PackageLogger.error('No refresh endpoint configured - calling logout');
       onLogout?.call();
       return failure;
