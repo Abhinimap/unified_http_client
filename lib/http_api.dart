@@ -18,6 +18,9 @@ class PackageHttp {
 
   static Uri? _baseUri;
 
+  /// an http instance for third party api service
+  static http.Client client = http.Client();
+
   /// define host and prefix so that
   /// on every request only specify endpoint
   static void setup({required String baseUrl}) {

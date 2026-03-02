@@ -58,6 +58,9 @@ class UnifiedHttpClient {
   /// will override these defaults on a key-by-key basis.
   static Map<String, String> defaultHeaders = <String, String>{};
 
+  /// api client for third party service api calls
+  static get apiClient => useHttp ? PackageHttp.client : PackageDio.dioInstance;
+
   /// Replace or merge global default headers at runtime.
   /// Useful for things like setting/changing auth tokens after login.
   ///
@@ -90,31 +93,30 @@ class UnifiedHttpClient {
     defaultHeaders.clear();
   }
 
-  static
-      /// by default it will use http and show snackbar
-      void init(
-          {bool? usehttp,
-          bool? showSnackbar,
-          bool? showLogs,
-          List<UnifiedInterceptor>? interceptors,
-          String? baseUrl,
-          Map<String, dynamic>? queryParameters,
-          Duration? connectTimeout,
-          Duration? receiveTimeout,
-          Duration? sendTimeout,
-          Map<String, Object?>? extra,
-          Map<String, Object?>? headers,
-          UnifiedResponseType? responseType,
-          String? contentType,
-          bool? followRedirects,
-          int? maxRedirects,
-          bool? persistentConnection,
-          String? refreshTokenEndpoint,
-          List<String>? refreshWhitelist,
-          Future<void> Function(Map<String, dynamic> newTokens)? onTokenRefreshed,
-          Map<String, dynamic> Function()? getRefreshTokenBody,
-          VoidCallback? onLogout,
-          List<String>? skipLogout}) {
+  /// by default it will use http and show snackbar
+  static void init(
+      {bool? usehttp,
+      bool? showSnackbar,
+      bool? showLogs,
+      List<UnifiedInterceptor>? interceptors,
+      String? baseUrl,
+      Map<String, dynamic>? queryParameters,
+      Duration? connectTimeout,
+      Duration? receiveTimeout,
+      Duration? sendTimeout,
+      Map<String, Object?>? extra,
+      Map<String, Object?>? headers,
+      UnifiedResponseType? responseType,
+      String? contentType,
+      bool? followRedirects,
+      int? maxRedirects,
+      bool? persistentConnection,
+      String? refreshTokenEndpoint,
+      List<String>? refreshWhitelist,
+      Future<void> Function(Map<String, dynamic> newTokens)? onTokenRefreshed,
+      Map<String, dynamic> Function()? getRefreshTokenBody,
+      VoidCallback? onLogout,
+      List<String>? skipLogout}) {
     UnifiedHttpClient.useHttp = usehttp ?? true;
     UnifiedHttpClient.showSnackbar = showSnackbar ?? true;
     UnifiedHttpClient.showLogs = showLogs ?? false;

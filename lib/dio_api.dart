@@ -15,6 +15,9 @@ class PackageDio {
   static BaseOptions? _baseOptions = BaseOptions();
   static List<UnifiedInterceptor> _unifiedInterceptors = <UnifiedInterceptor>[];
 
+  /// for third party server services
+  static Dio dioInstance = Dio();
+
   /// setup dio
   static void setUpDio() {
     try {
