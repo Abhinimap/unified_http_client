@@ -59,7 +59,10 @@ class UnifiedHttpClient {
   static Map<String, String> defaultHeaders = <String, String>{};
 
   /// api client for third party service api calls
-  static get apiClient => useHttp ? PackageHttp.client : PackageDio.dioInstance;
+  static http.Client get httpApiClient => PackageHttp.client;
+
+  /// api client for third party service api calls
+  static Dio get dioApiClient => PackageDio.dioInstance;
 
   /// Replace or merge global default headers at runtime.
   /// Useful for things like setting/changing auth tokens after login.
