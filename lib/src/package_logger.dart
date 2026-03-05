@@ -5,7 +5,7 @@ class PackageLogger {
 
   static bool _ansiEnabled = false;
 
-  static final AnsiPen _logPen = AnsiPen()..cyan();
+  static final AnsiPen _logPen = AnsiPen()..rgb(r: 0, g: 200, b: 179);
   static final AnsiPen _warningPen = AnsiPen()..yellow();
   static final AnsiPen _errorPen = AnsiPen()..red();
   static final AnsiPen _successPen = AnsiPen()..green();
