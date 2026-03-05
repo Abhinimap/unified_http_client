@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:unified_http_client/src/package_logger.dart';
 
 /// A Class to get Information about the Internet and Connection provider
 
@@ -66,7 +67,7 @@ class InternetConnectionChecker {
           if (completer.isCompleted) return;
 
           if (result) {
-            debugPrint("option checked : ${_defaultCheckOptions.length - length}");
+            PackageLogger.log("option checked : ${_defaultCheckOptions.length - length}");
             completer.complete(true);
           } else if (length == 0) {
             completer.complete(false);

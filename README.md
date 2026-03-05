@@ -137,10 +137,10 @@ final result = await UnifiedHttpClient.get(
 
 result.fold(
   (failure) {
-    debugPrint('GET failed: ${failure.unifiedHttpClientEnum} - ${failure.message}');
+    PackageLogger.error('GET failed: ${failure.unifiedHttpClientEnum} - ${failure.message}');
   },
   (body) {
-    debugPrint('GET body: $body');
+    PackageLogger.green('GET body: $body');
   },
 );
 ```

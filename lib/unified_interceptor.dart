@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:unified_http_client/src/package_logger.dart';
 
 /// Lightweight request model used by unified interceptors.
 class UnifiedRequest {
@@ -80,12 +80,12 @@ class ApiInterceptor extends UnifiedInterceptor {
   @override
   FutureOr<UnifiedRequest> onRequest(UnifiedRequest request) async {
     if (showLogs) {
-      debugPrint('[UnifiedHttpClient] → ${request.method} ${request.uri}');
+      PackageLogger.log('[UnifiedHttpClient] → ${request.method} ${request.uri}');
       if (request.headers.isNotEmpty) {
-        debugPrint('[UnifiedHttpClient] headers: ${request.headers}');
+        PackageLogger.log('[UnifiedHttpClient] headers: ${request.headers}');
       }
       if (request.body != null) {
-        debugPrint('[UnifiedHttpClient] body: ${request.body}');
+        PackageLogger.log('[UnifiedHttpClient] body: ${request.body}');
       }
     }
     return onRequestOverride?.call(request) ?? request;
@@ -94,9 +94,9 @@ class ApiInterceptor extends UnifiedInterceptor {
   @override
   FutureOr<UnifiedResponse> onResponse(UnifiedResponse response) async {
     if (showLogs) {
-      debugPrint('[UnifiedHttpClient] ← status ${response.statusCode}');
+      PackageLogger.success('[UnifiedHttpClient] ← status ${response.statusCode}');
       if (response.data != null) {
-        debugPrint('[UnifiedHttpClient] response: ${response.data}');
+        PackageLogger.success('[UnifiedHttpClient] response: ${response.data}');
       }
     }
     return onResponseOverride?.call(response) ?? response;
@@ -105,9 +105,9 @@ class ApiInterceptor extends UnifiedInterceptor {
   @override
   FutureOr<UnifiedError> onError(UnifiedError error) async {
     if (showLogs) {
-      debugPrint('[UnifiedHttpClient] ✕ error: ${error.error}');
+      PackageLogger.error('[UnifiedHttpClient] ✕ error: ${error.error}');
       if (error.response != null) {
-        debugPrint('[UnifiedHttpClient] error response: ${error.response?.data}');
+        PackageLogger.error('[UnifiedHttpClient] error response: ${error.response?.data}');
       }
     }
     return onErrorOverride?.call(error) ?? error;

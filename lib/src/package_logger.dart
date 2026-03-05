@@ -1,36 +1,44 @@
-import 'dart:developer' as developper;
+import 'package:ansicolor/ansicolor.dart';
 
 class PackageLogger {
   static const String _packageName = 'unified_http_client';
 
-  // ANSI color codes
-  static const String _reset = '\x1B[0m';
-  static const String _red = '\x1B[31m';
-  static const String _green = '\x1B[32m';
-  static const String _yellow = '\x1B[33m';
-  static const String _blue = '\x1B[34m';
-  static const String _magenta = '\x1B[35m';
-  static const String _cyan = '\x1B[36m';
+  static bool _ansiEnabled = false;
+
+  static final AnsiPen _logPen = AnsiPen()..cyan();
+  static final AnsiPen _warningPen = AnsiPen()..yellow();
+  static final AnsiPen _errorPen = AnsiPen()..red();
+  static final AnsiPen _successPen = AnsiPen()..green();
+
+  /// Force ANSI colors on. Call once so logs use our colors even when
+  /// stdout is not a TTY (e.g. Flutter IDE debug console).
+  static void enableAnsiColors() {
+    if (_ansiEnabled) return;
+    _ansiEnabled = true;
+    ansiColorDisabled = false;
+  }
 
   static void log(dynamic data) {
-    _print(_cyan, 'LOG', data);
+    _print(_logPen, 'LOG', data);
   }
 
   static void warning(dynamic data) {
-    _print(_yellow, 'WARNING', data);
+    _print(_warningPen, 'WARNING', data);
   }
 
   static void error(dynamic data) {
-    _print(_red, 'ERROR', data);
+    _print(_errorPen, 'ERROR', data);
   }
 
   static void success(dynamic data) {
-    _print(_green, 'SUCCESS', data);
+    _print(_successPen, 'SUCCESS', data);
   }
 
-  static void _print(String color, String tag, dynamic data) {
+  static void _print(AnsiPen pen, String tag, dynamic data) {
+    enableAnsiColors();
     final message = data?.toString() ?? '';
-    // ignore: avoid_print
-    developper.log('$color[$_packageName][$tag] $message$_reset');
+    print(
+      pen('[$_packageName][$tag] $message'),
+    );
   }
 }

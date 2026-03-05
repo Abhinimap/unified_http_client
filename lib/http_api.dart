@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:unified_http_client/src/package_logger.dart';
 import 'package:unified_http_client/unified_http_client_service.dart';
 import 'package:unified_http_client/result.dart';
 import 'package:unified_http_client/unified_interceptor.dart';
@@ -74,7 +75,7 @@ class PackageHttp {
       );
       final targetUrl = prepared.uri;
 
-      debugPrint('requesting on  :$targetUrl');
+      PackageLogger.log('requesting on  :$targetUrl');
       final response =
           _client != null ? await _client!.get(targetUrl, headers: prepared.headers) : await http.get(targetUrl, headers: prepared.headers);
 
@@ -131,7 +132,7 @@ class PackageHttp {
         _interceptors,
       );
 
-      debugPrint('requesting post : ${prepared.uri}');
+      PackageLogger.log('requesting post : ${prepared.uri}');
       final response = _client != null
           ? await _client!.post(prepared.uri, headers: prepared.headers, body: json.encode(prepared.body))
           : await http.post(prepared.uri, headers: prepared.headers, body: json.encode(prepared.body));
@@ -168,7 +169,7 @@ class PackageHttp {
         UnifiedRequest(method: 'DELETE', uri: url, headers: headers),
         _interceptors,
       );
-      debugPrint('requesting on  :${prepared.uri}');
+      PackageLogger.log('requesting on  :${prepared.uri}');
       final response = _client != null
           ? await _client!.delete(prepared.uri, headers: prepared.headers)
           : await http.delete(prepared.uri, headers: prepared.headers);
@@ -322,7 +323,7 @@ class PackageHttp {
         _interceptors,
       );
 
-      debugPrint('requesting multipart : ${prepared.uri}');
+      PackageLogger.log('requesting multipart : ${prepared.uri}');
       final request = http.MultipartRequest('POST', prepared.uri);
 
       // Add headers if provided

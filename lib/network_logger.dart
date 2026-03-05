@@ -43,11 +43,6 @@ class NetworkLogStorage {
 
   void addLog(NetworkLogModel log) {
     _logs.insert(0, log);
-    if (kDebugMode) {
-      // Optional debug print for quick inspection during development.
-      // ignore: avoid_print
-      print('[NetworkLog] ${log.method} ${log.url} -> ${log.statusCode} in ${log.duration.inMilliseconds}ms');
-    }
   }
 
   void clear() {
@@ -97,7 +92,8 @@ class NetworkLogInterceptor extends UnifiedInterceptor {
 
     if (req != null) {
       final start = req.startedAt ?? DateTime.now();
-      final duration = DateTime.now().difference(start);      NetworkLogStorage.instance.addLog(
+      final duration = DateTime.now().difference(start);
+      NetworkLogStorage.instance.addLog(
         NetworkLogModel(
           method: req.method,
           url: req.uri.toString(),
